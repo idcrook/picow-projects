@@ -2,6 +2,8 @@
 
 A sensor node proof-of-concept for Pico W in MicroPython
 
+![video of display when starting up](bootup.gif)
+
  - BME280 Temperature / Pressure / Humidity sensor (I2C connection)
  - SSD1306 OLED display (128x32 dots?) (I2C connection)
  - Raspberry Pi Pico W
