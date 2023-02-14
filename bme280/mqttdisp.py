@@ -5,7 +5,7 @@ import bme280
 from umqtt.simple import MQTTClient
 from ssd1306 import SSD1306_I2C
 
-# subscribe to topic picow/# on http://192.168.50.6:9001/
+# subscribe to topic picow0/# on http://192.168.50.6:9001/
 
 I2C_BME280_ADDRESS = 0x77
 I2C_SSD1306_ADDRESS = 0x3c
