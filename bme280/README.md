@@ -2,8 +2,6 @@
 
 A sensor node proof-of-concept for Pico W in MicroPython
 
-![video of display when starting up](bootup.gif)
-
  - BME280 Temperature / Pressure / Humidity sensor (I2C connection)
  - SSD1306 OLED display (128x32 dots?) (I2C connection)
  - Raspberry Pi Pico W
@@ -34,7 +32,7 @@ This will connect Pico W to your Wi-Fi and run the micropython code (which will 
 ```python
 mip.install("upip")
 mip.install("urequests")
-###mip.install("bme280")
+### supply our own instead # mip.install("bme280")
 mip.install("umqtt.simple")
 mip.install("umqtt.robust")
 mip.install("ssd1306")
@@ -78,6 +76,14 @@ mpremote run test_oled.py
 
 # add mqtt
 mpremote run mqtt.py
+
+# create config file (edit script or output)
+python3 create_cfg.py
+copy config.example.json config.secrets.json
+# !! EDIT FILE config.secrets.json for your envirnment
+
+# copy config file to device
+mpremote fs cp config.secrets.json :
 
 # altogether now
 mpremote run mqttdisp.py
