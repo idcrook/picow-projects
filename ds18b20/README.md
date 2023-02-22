@@ -2,7 +2,7 @@
 
 A sensor node proof-of-concept for Pico W in MicroPython
 
- - DS18B20 Temperature waterproof probe
+ - DS18B20 Temperature probe (waterproof)
 
  
 ## Install
