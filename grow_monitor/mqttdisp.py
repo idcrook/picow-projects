@@ -12,6 +12,7 @@ import json
 
 config_file = 'config.secrets.json'
 ONEWIRE_ENABLED = False
+BME280_ENABLED = False
 
 DEFAULT_SDA_PIN = 17
 DEFAULT_SCL_PIN = 16
@@ -37,16 +38,18 @@ except OSError as ose:
     if ose.errno not in (errno.ENOENT,):
         # this re-raises the same error object.
         raise
-    pass # ENOENT. 
+    pass # ENOENT.
 
 # subtrees of the config file
-MQTT_CONF = CONFIG.get("mqtt", {})  
+MQTT_CONF = CONFIG.get("mqtt", {})
 I2C_CONF = CONFIG.get("i2c", {})
 WIFI_CONF = CONFIG.get("wifi", {})
 ONEWIRE_CONF = CONFIG.get("onewire", {})
 GLOBAL_CONF = CONFIG.get("global", {})
 
 sensor_read_interval = GLOBAL_CONF.get('sensor_read_interval_seconds', DEFAULT_SENSOR_READ_INTERVAL_SECONDS)
+BME280_ENABLED = GLOBAL_CONF.get('enable_bme', BME280_ENABLED)
+
 
 sda_pin = I2C_CONF.get('sda_pin', DEFAULT_SDA_PIN)  # assume default here if not found
 scl_pin = I2C_CONF.get('scl_pin', DEFAULT_SCL_PIN)
@@ -64,8 +67,16 @@ except ValueError as ve:
     print("Check settings in file", config_file, "on device")
     raise
 
-bme = bme280.BME280(i2c=i2c, address=i2c_bme280_addr)
-display = SSD1306_I2C(i2c_ssd1306_width, i2c_ssd1306_height, i2c, 
+
+class dummy:
+    def __init__(self):
+        self.values = ("0", "0", "0")
+
+if BME280_ENABLED:
+    bme = bme280.BME280(i2c=i2c, address=i2c_bme280_addr)
+else:
+    bme = dummy()
+display = SSD1306_I2C(i2c_ssd1306_width, i2c_ssd1306_height, i2c,
                       addr=i2c_ssd1306_addr)
 
 wifi_ssid = WIFI_CONF.get('ssid', DEFAULT_WIFI_SSID)
@@ -109,7 +120,7 @@ display.text('' + status[0], 0, 23, 1)
 display.show()
 
 # Initialize onewire devices
-onewire_data_pin = ONEWIRE_CONF.get('data_pin', DEFAULT_ONEWIRE_DATA_PIN) 
+onewire_data_pin = ONEWIRE_CONF.get('data_pin', DEFAULT_ONEWIRE_DATA_PIN)
 ds_sensor = ds18x20.DS18X20(onewire.OneWire(Pin(onewire_data_pin)))
 ds_roms = ds_sensor.scan()
 if len(ds_roms) > 0:
@@ -168,21 +179,31 @@ while True:
             print(probe_temperature)
 
         # publish as MQTT payload
-        publish(MQTT_TOPIC_ROOT + '/probe_temperature', probe_temperature)
+        try:
+            publish(MQTT_TOPIC_ROOT + '/probe_temperature', probe_temperature)
+        except OSError as exc:
+            if exc.args[0] == errno.EHOSTUNREACH:
+                # FIXME: "display" this error condition
+                print('EHOSTUNREACH')
+                sleep(60)
 
-    publish(MQTT_TOPIC_ROOT + '/temperature', temperature)
-    publish(MQTT_TOPIC_ROOT + '/humidity', humidity)
-    publish(MQTT_TOPIC_ROOT + '/pressure', pressure)
+    if BME280_ENABLED:
+        publish(MQTT_TOPIC_ROOT + '/temperature', temperature)
+        publish(MQTT_TOPIC_ROOT + '/humidity', humidity)
+        publish(MQTT_TOPIC_ROOT + '/pressure', pressure)
 
     # show on display
     display.fill(0)
+
     if ONEWIRE_ENABLED:
         display.text("Tmp " + bme.values[0] + " " + probe_temperature, 3, 0, 1)
     else:
-        display.text("Temp " + bme.values[0], 3, 0, 1)
+        if BME280_ENABLED:
+            display.text("Temp " + bme.values[0], 3, 0, 1)
 
-    display.text("PA  " + bme.values[1], 3, 11, 1)
-    display.text("Humidity " + bme.values[2], 3, 23, 1)
+    if BME280_ENABLED:
+        display.text("PA  " + bme.values[1], 3, 11, 1)
+        display.text("Humidity " + bme.values[2], 3, 23, 1)
     display.show()
 
     # delay for number of seconds

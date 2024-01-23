@@ -2,6 +2,12 @@
 
 Projects for Raspberry Pi Pico W
 
+## `mpremote`
+
+```console
+pip install --user --break-system-packages mpremote
+```
+
 ## [bme280](bme280)
 
 A sensor node proof-of-concept for Pico W in MicroPython.
@@ -12,4 +18,3 @@ A sensor node proof-of-concept for Pico W in MicroPython.
 ## [grow_monitor](grow_monitor)
 
 The bme280 code extended to include a 1-Wire DS18B20 temperature probe.
-
