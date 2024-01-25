@@ -28,6 +28,12 @@ DEFAULT_MQTT_PORT=1883
 DEFAULT_MQTT_TOPIC_ROOT="picow0"
 DEFAULT_SENSOR_READ_INTERVAL_SECONDS = 15
 
+class DummyBme:
+    """Can use in place of actual BME object."""
+    def __init__(self):
+        self.values = ("0", "0", "0")
+
+
 CONFIG = {}
 
 try:
@@ -50,7 +56,6 @@ GLOBAL_CONF = CONFIG.get("global", {})
 sensor_read_interval = GLOBAL_CONF.get('sensor_read_interval_seconds', DEFAULT_SENSOR_READ_INTERVAL_SECONDS)
 BME280_ENABLED = GLOBAL_CONF.get('enable_bme', BME280_ENABLED)
 
-
 sda_pin = I2C_CONF.get('sda_pin', DEFAULT_SDA_PIN)  # assume default here if not found
 scl_pin = I2C_CONF.get('scl_pin', DEFAULT_SCL_PIN)
 
@@ -67,57 +72,57 @@ except ValueError as ve:
     print("Check settings in file", config_file, "on device")
     raise
 
-
-class dummy:
-    def __init__(self):
-        self.values = ("0", "0", "0")
+display = SSD1306_I2C(i2c_ssd1306_width, i2c_ssd1306_height, i2c,
+                      addr=i2c_ssd1306_addr)
 
 if BME280_ENABLED:
     bme = bme280.BME280(i2c=i2c, address=i2c_bme280_addr)
 else:
-    bme = dummy()
-display = SSD1306_I2C(i2c_ssd1306_width, i2c_ssd1306_height, i2c,
-                      addr=i2c_ssd1306_addr)
+    bme = DummyBme()
 
 wifi_ssid = WIFI_CONF.get('ssid', DEFAULT_WIFI_SSID)
 wifi_password = WIFI_CONF.get('password', DEFAULT_WIFI_PASSWORD)
 
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
-wlan.connect(wifi_ssid, wifi_password)
 
-display.fill(0)
-display.text("Waiting on WiFi", 3, 0, 1)
-display.show()
+def GetConnection():
+    wlan.connect(wifi_ssid, wifi_password)
 
-# Wait for connect or fail
-max_wait = 10
-dot_position = 0
-dot_incr = 6
-
-while max_wait > 0:
-
-    if wlan.status() < 0 or wlan.status() >= 3:
-        break
-    max_wait -= 1
-    print('waiting for connection')
-    display.text(".", 3 + dot_position, 11, 1)
+    display.fill(0)
+    display.text("Waiting on WiFi", 3, 0, 1)
     display.show()
-    dot_position = dot_position + dot_incr
-    sleep(2)
 
-# Handle connection error
-if wlan.status() != 3:
-    raise RuntimeError('network connection failed')
-else:
-    print('connected')
+    # Wait for connect or fail
+    max_wait = 10
+    dot_position = 0
+    dot_incr = 6
 
-status = wlan.ifconfig()
-print('ip = ' + status[0])
-display.fill(0)
-display.text('ip addr:', 0, 11, 1)
-display.text('' + status[0], 0, 23, 1)
-display.show()
+    while max_wait > 0:
+
+        if wlan.status() < 0 or wlan.status() >= 3:
+            break
+        max_wait -= 1
+        print('waiting for connection')
+        display.text(".", 3 + dot_position, 11, 1)
+        display.show()
+        dot_position = dot_position + dot_incr
+        sleep(2)
+
+    # Handle connection error
+    if wlan.status() != 3:
+        raise RuntimeError('network connection failed')
+    else:
+        print('connected')
+
+    status = wlan.ifconfig()
+    print('ip = ' + status[0])
+    display.fill(0)
+    display.text('ip addr:', 0, 11, 1)
+    display.text('' + status[0], 0, 23, 1)
+    display.show()
+
+GetConnection()
 
 # Initialize onewire devices
 onewire_data_pin = ONEWIRE_CONF.get('data_pin', DEFAULT_ONEWIRE_DATA_PIN)
@@ -161,13 +166,19 @@ def getDSTemperature(ds, rom):
 
 probe_temperature = str(round(0.0, 1)) + 'F'
 
+PUBLISH_COUNT = 0
+PUBLISH_COUNT_SHOW_EACH = 10
+HOST_UNREACHABLE_COUNT = 0
+RECONNECT_AFTER = 6
+
 while True:
     sensor_reading = bme
     temperature = sensor_reading.values[0]
     pressure = sensor_reading.values[1]
     humidity = sensor_reading.values[2]
 
-    print(sensor_reading.values)
+    if BME280_ENABLED:
+        print(sensor_reading.values)
 
     if ONEWIRE_ENABLED:
         # trigger sensor read
@@ -176,16 +187,24 @@ while True:
 
         for rom in ds_roms:
             probe_temperature = getDSTemperature(ds_sensor, rom)
-            print(probe_temperature)
+            print(probe_temperature, end=' ')
 
         # publish as MQTT payload
         try:
+            PUBLISH_COUNT += 1
             publish(MQTT_TOPIC_ROOT + '/probe_temperature', probe_temperature)
+            publish(MQTT_TOPIC_ROOT + '/sequential', str(PUBLISH_COUNT))
+            if (PUBLISH_COUNT % PUBLISH_COUNT_SHOW_EACH == 0):
+                print('')
+                print("Sensor reads so far:", PUBLISH_COUNT)
         except OSError as exc:
             if exc.args[0] == errno.EHOSTUNREACH:
-                # FIXME: "display" this error condition
-                print('EHOSTUNREACH')
-                sleep(60)
+                # FIXME: Show error on OLED
+                HOST_UNREACHABLE_COUNT = HOST_UNREACHABLE_COUNT + 1
+                print('EHOSTUNREACH', HOST_UNREACHABLE_COUNT)
+                #sleep(60)
+                if (HOST_UNREACHABLE_COUNT % RECONNECT_AFTER == 0):
+                    GetConnection()
 
     if BME280_ENABLED:
         publish(MQTT_TOPIC_ROOT + '/temperature', temperature)
