@@ -86,7 +86,11 @@ wifi_password = WIFI_CONF.get('password', DEFAULT_WIFI_PASSWORD)
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
 
+HAD_FIRST_CONNECTION = False
+RETRY_WAIT_AFTER_FIRST_CONNECTION = 60
+
 def GetConnection():
+    global HAD_FIRST_CONNECTION
     wlan.connect(wifi_ssid, wifi_password)
 
     display.fill(0)
@@ -99,6 +103,9 @@ def GetConnection():
     dot_incr = 6
 
     while max_wait > 0:
+        # add more time delay if we got here after startup
+        if HAD_FIRST_CONNECTION:
+            sleep(RETRY_WAIT_AFTER_FIRST_CONNECTION)
 
         if wlan.status() < 0 or wlan.status() >= 3:
             break
@@ -112,8 +119,9 @@ def GetConnection():
     # Handle connection error
     if wlan.status() != 3:
         raise RuntimeError('network connection failed')
-    else:
-        print('connected')
+
+    print('connected')
+    HAD_FIRST_CONNECTION = True
 
     status = wlan.ifconfig()
     print('ip = ' + status[0])
@@ -192,17 +200,18 @@ while True:
         # publish as MQTT payload
         try:
             PUBLISH_COUNT += 1
+            status_obj = {'sensor_reads': PUBLISH_COUNT,
+                          'EHOSTUNREACH': HOST_UNREACHABLE_COUNT}
             publish(MQTT_TOPIC_ROOT + '/probe_temperature', probe_temperature)
-            publish(MQTT_TOPIC_ROOT + '/sequential', str(PUBLISH_COUNT))
+            publish(MQTT_TOPIC_ROOT + '/status', json.dumps(status_obj))
             if (PUBLISH_COUNT % PUBLISH_COUNT_SHOW_EACH == 0):
                 print('')
-                print("Sensor reads so far:", PUBLISH_COUNT)
+                print("Sensor reads so far:", str(status_obj))
         except OSError as exc:
             if exc.args[0] == errno.EHOSTUNREACH:
-                # FIXME: Show error on OLED
+                # FIXME: Show error condition on OLED
                 HOST_UNREACHABLE_COUNT = HOST_UNREACHABLE_COUNT + 1
                 print('EHOSTUNREACH', HOST_UNREACHABLE_COUNT)
-                #sleep(60)
                 if (HOST_UNREACHABLE_COUNT % RECONNECT_AFTER == 0):
                     GetConnection()
 
