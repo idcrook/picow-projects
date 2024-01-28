@@ -168,7 +168,7 @@ async def main(client):
         if ONEWIRE_ENABLED:
             # show on display
             display.fill(0)
-            display.text("Read " + str(PUBLISH_COUNT) + " " + probe_temperature, 3, 0, 1)
+            display.text("Rd " + str(PUBLISH_COUNT) + " " + probe_temperature, 3, 0, 1)
             display.show()
 
         await asyncio.sleep(sensor_read_interval)
