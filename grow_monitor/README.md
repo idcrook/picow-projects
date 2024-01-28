@@ -34,19 +34,29 @@ This will connect Pico W to your Wi-Fi and run the micropython code (which will 
 mip.install("upip")
 mip.install("urequests")
 ### supply our own instead # mip.install("bme280")
-mip.install("umqtt.simple")
-mip.install("umqtt.robust")
+### mip.install("umqtt.simple")
+### mip.install("umqtt.robust")
 mip.install("ssd1306")
 mip.install("onewire")
 mip.install("ds18x20")
 ```
 
+
+Async MQTT
+
+https://github.com/peterhinch/micropython-mqtt/blob/master/mqtt_as/README.md
+
+```
+wget https://raw.githubusercontent.com/peterhinch/micropython-mqtt/master/mqtt_as/mqtt_as.py
+```
+
 ### Copy local code
 
-Use our version of `bme280` micropython library.
+Use our version of `bme280` micropython library and the `mqtt_as` library.
 
 ```shell
 mpremote fs cp bme280.py :lib/
+mpremote fs cp mqtt_as.py :lib/
 ```
 
 **Optional: Launch on power-up**
@@ -54,7 +64,8 @@ mpremote fs cp bme280.py :lib/
 MicroPython will run any script it finds with the name `main.py` at startup. Probably wait on this until you verify it is running properly (see next section)
 
 ```shell
-mpremote fs cp mqttdisp.py :main.py
+# mpremote fs cp mqttdisp.py :main.py
+mpremote fs cp mqtt_as_disp.py :main.py
 ```
 
 ## Run the examples
