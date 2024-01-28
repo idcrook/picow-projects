@@ -177,9 +177,10 @@ probe_temperature = str(round(0.0, 1)) + 'F'
 PUBLISH_COUNT = 0
 PUBLISH_COUNT_SHOW_EACH = 10
 HOST_UNREACHABLE_COUNT = 0
-RECONNECT_AFTER = 6
+RECONNECT_AFTER = 3
 
 while True:
+    #global client
     sensor_reading = bme
     temperature = sensor_reading.values[0]
     pressure = sensor_reading.values[1]
@@ -210,10 +211,18 @@ while True:
         except OSError as exc:
             if exc.args[0] == errno.EHOSTUNREACH:
                 # FIXME: Show error condition on OLED
+                print('EHOSTUNREACH:', HOST_UNREACHABLE_COUNT)
                 HOST_UNREACHABLE_COUNT = HOST_UNREACHABLE_COUNT + 1
-                print('EHOSTUNREACH', HOST_UNREACHABLE_COUNT)
+                # Try to recover wifi connection
                 if (HOST_UNREACHABLE_COUNT % RECONNECT_AFTER == 0):
                     GetConnection()
+            elif exc.args[0] == errno.ECONNRESET:
+                print('ECONNRESET: MQTT server went offline?')
+                # Try to recover MQTT client
+                client = connectMQTT()
+            else:
+                raise
+
 
     if BME280_ENABLED:
         publish(MQTT_TOPIC_ROOT + '/temperature', temperature)
