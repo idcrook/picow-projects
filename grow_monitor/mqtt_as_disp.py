@@ -1,6 +1,5 @@
 import errno
 from machine import Pin, I2C
-import network
 from time import sleep, sleep_ms
 import asyncio
 from ssd1306 import SSD1306_I2C
@@ -99,9 +98,9 @@ def conv_CtoF(temperature):
 
 def getDSTemperature(ds, rom):
     """ Get DS temperature reading. Return string in Fahrenheit."""
-    temp_C = ds.read_temp(rom)
-    temp = str(round(conv_CtoF(temp_C), 1)) + 'F'
-    return temp
+    tC = ds.read_temp(rom)
+    temperatureInFstr = str(round(conv_CtoF(tC), 1)) + 'F'
+    return temperatureInFstr
 
 
 # Not currently used
@@ -128,9 +127,9 @@ async def main(client):
     # Access internal client details to get some network status
     status = client._sta_if.ifconfig()
     print('ip = ' + status[0])
-    display.fill(0)
-    display.text('ip addr:', 0, 11, 1)
-    display.text('' + status[0], 0, 23, 1)
+    display.fill(1)
+    display.text('ip addr:', 0, 11, 0)
+    display.text('' + status[0], 0, 23, 0)
     display.show()
     await asyncio.sleep(2)
 
@@ -155,9 +154,9 @@ async def main(client):
         # publish as MQTT payload
         status_obj = {'sensor_reads': read_count}
         await client.publish(MQTT_TOPIC_ROOT + '/probe_temperature',
-                             probe_temperature)
+                             probe_temperature, qos=1)
         await client.publish(MQTT_TOPIC_ROOT + '/status',
-                             json.dumps(status_obj))
+                             json.dumps(status_obj), qos=1)
         if (read_count % publish_count_debug_show_each == 0):
             print('')
             print("Sensor reads so far:", str(status_obj))
