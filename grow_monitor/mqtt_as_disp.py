@@ -143,7 +143,7 @@ async def main(client):
         if ONEWIRE_ENABLED:
             # trigger sensor read
             ds_sensor.convert_temp()
-            sleep_ms(750)
+            await asyncio.sleep_ms(750)
 
             for rom in ds_roms:
                 probe_temperature = getDSTemperature(ds_sensor, rom)
@@ -152,9 +152,10 @@ async def main(client):
             read_count += 1
 
         # publish as MQTT payload
-        status_obj = {'sensor_reads': read_count}
-        await client.publish(MQTT_TOPIC_ROOT + '/probe_temperature',
-                             probe_temperature, qos=1)
+        status_obj = {'sensor_reads': read_count,
+                      'probe_temperature': probe_temperature}
+        # await client.publish(MQTT_TOPIC_ROOT + '/probe_temperature',
+        #                      probe_temperature, qos=1)
         await client.publish(MQTT_TOPIC_ROOT + '/status',
                              json.dumps(status_obj), qos=1)
         if (read_count % publish_count_debug_show_each == 0):
