@@ -12,7 +12,11 @@ example_config = {
         "scl_pin": 5
     },
     "onewire": {
-        "data_pin": 26
+        "data_pin": 26,
+        "sensors": [
+            {"288f8846b1220767": {"topic": "bed1"}},
+            {"2834e459b1220734": {"topic": "bed2"}},
+        ]
     },
     "wifi": {
         "ssid": "guest_net",
