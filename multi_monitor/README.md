@@ -34,6 +34,7 @@ mpremote run install_using_mip.py
 This will connect Pico W to your Wi-Fi and run the micropython code (which will download and install the micropython libraries)
 
 ```python
+import mip
 mip.install("upip")
 mip.install("urequests")
 ### supply our own instead # mip.install("bme280")
@@ -42,24 +43,15 @@ mip.install("urequests")
 mip.install("ssd1306")
 mip.install("onewire")
 mip.install("ds18x20")
+mip.install("github:peterhinch/micropython-mqtt")
 ```
 
 
-Async MQTT
+### Async MQTT
 
-https://github.com/peterhinch/micropython-mqtt/blob/master/mqtt_as/README.md
+<https://github.com/peterhinch/micropython-mqtt>
 
-```
-wget https://raw.githubusercontent.com/peterhinch/micropython-mqtt/master/mqtt_as/mqtt_as.py
-```
-
-### Copy local code
-
-Use local version of `mqtt_as` micropython library.
-
-```shell
-mpremote fs cp mqtt_as.py :lib/
-```
+Now can be installed using `mip`.
 
 **Optional: Launch on power-up**
 
