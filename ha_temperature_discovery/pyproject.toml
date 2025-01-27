@@ -158,3 +158,21 @@ docstring-code-format = false
 # This only has an effect when the `docstring-code-format` setting is
 # enabled.
 docstring-code-line-length = "dynamic"
+
+# https://micropython-stubs.readthedocs.io/en/main/22_vscode.html#pylance-pyright-using-pyproject-toml
+[tool.pyright]
+include = ["src"]
+ignore = ["**/typings"]
+exclude = [
+    ".*",
+    "__*",
+    "**/typings",
+]
+
+typeCheckingMode = "basic"
+stubPath = "typings"
+typeshedPath = "typings"
+pythonPlatform = "Linux"
+
+reportMissingModuleSource = "none"
+reportUnnecessaryTypeIgnoreComment = "error"
