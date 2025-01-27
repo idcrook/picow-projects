@@ -37,15 +37,13 @@ status = wlan.ifconfig()
 print('ip = ' + status[0])
 
 import mip
-# mip.install("upip")
 mip.install("requests")
-# mip.install("umqtt.simple")
-# mip.install("umqtt.robust")
 mip.install("ssd1306")
 mip.install("onewire")
 mip.install("ds18x20")
 mip.install("github:peterhinch/micropython-mqtt", target="third-party")
 mip.install("github:idcrook/micropython-tomli", target="third-party")
+mip.install("github:idcrook/MicroPython_BMPxxx", target="third-party")
 
 sys.path.append("third-party")
 
@@ -57,3 +55,4 @@ import ds18x20
 import json
 from mqtt_as import MQTTClient, config
 import tomli
+from micropython_bmpxxx import bmpxxx
