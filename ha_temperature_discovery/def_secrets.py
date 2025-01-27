@@ -1,0 +1,15 @@
+
+WIFI_SSID = "wifi name"
+WIFI_PASSWORD = "mypass!"
+
+MQTT_SERVER = "YOUR MQTT BROKER IP"
+MQTT_PORT = 1883
+MQTT_USER = None
+MQTT_PASSWORD = None
+
+# DEVICE_LOCATION = "LivingRoom"
+# UNIQUE_ID_PRE = "001"
+
+# CLIENT_ID = "thisTempThing"
+# UTC_OFFSET = "-8"
+# SCALE = "F"
