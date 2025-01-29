@@ -4,7 +4,8 @@ import binascii
 import onewire
 import ds18x20
 
-ONEWIRE_DATA_PIN = 26
+# https://picow.pinout.xyz/ "GP22" -> row 12 on breadboard
+ONEWIRE_DATA_PIN = 22
 
 ds_pin = Pin(ONEWIRE_DATA_PIN)
 
