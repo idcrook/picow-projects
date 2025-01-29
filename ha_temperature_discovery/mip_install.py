@@ -42,8 +42,9 @@ mip.install("ssd1306")
 mip.install("onewire")
 mip.install("ds18x20")
 mip.install("github:peterhinch/micropython-mqtt", target="third-party")
-mip.install("github:idcrook/micropython-tomli", target="third-party")
-mip.install("github:idcrook/MicroPython_BMPxxx", target="third-party")
+# do not use # mip.install("github:idcrook/micropython-tomli", target="third-party")
+#mip.install("github:idcrook/MicroPython_BMPxxx", target="third-party")
+mip.install("github:bradcar/MicroPython_BMPxxx", target="third-party")
 
 sys.path.append("third-party")
 
@@ -54,5 +55,5 @@ import onewire
 import ds18x20
 import json
 from mqtt_as import MQTTClient, config
-import tomli
+#import tomli
 from micropython_bmpxxx import bmpxxx
