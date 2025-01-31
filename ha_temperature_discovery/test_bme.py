@@ -1,3 +1,4 @@
+# mpremote run test_bme.py
 import errno
 import time
 import network
@@ -28,20 +29,20 @@ from micropython_bmpxxx import bmpxxx
 i2c = I2C(0, sda=Pin(4), scl=Pin(5))
 bme = bmpxxx.BME280(i2c, address=0x77)
 
-temp = bme.temperature
-print(temp)
+# temp = bme.temperature
+# print(temp)
 
-did = bme._read_device_id()
-print(did, f"{did:#x}")
+# did = bme._read_device_id()
+# print(did, f"{did:#x}")
 
 
-# https://forecast.weather.gov/data/obhistory/KFNL.html  1017.9
+# https://forecast.weather.gov/data/obhistory/KFNL.html  1020.1
 
 sea_level_pressure = bme.sea_level_pressure
 print(f"Initial sea_level_pressure = {sea_level_pressure:.2f} hPa")
 
 # reset driver to contain the accurate sea level pressure (SLP) from my nearest airport this hour
-bme.sea_level_pressure = 1017.9
+bme.sea_level_pressure = 1020.1
 print(f"Adjusted sea level pressure = {bme.sea_level_pressure:.2f} hPa\n")
 
 bme.pressure_oversample_rate = bme.OSR16
@@ -59,16 +60,19 @@ print(f"Sensor pressure = {pressure:.4f} hPa")
 print("---- loop ----")
 while True:
     # Pressure in hPA measured at sensor, temperature in Celsius
+    # NOTE: only the BME280 supports %humidity and dew_point functionality
     pressure = bme.pressure
-    print(f"Sensor pressure = {pressure:.4f} hPa")
+    print(f"sensor pressure = {pressure:.4f} hPa")
     temp = bme.temperature
     print(f"temp = {temp:.2f} C")
     humid = bme.humidity
-    print(f"humidity = {humid:.1f}%")
+    print(f"humidity = {humid:.2f}%")
+    dew = bme.dew_point
+    print(f"dew_point temperature = {dew:.2f} C")
 
     # Altitude in meters and in feet/inches
     meters = bme.altitude
-    print(f"Altitude = {meters:.2f} meters")
+    print(f"Altitude = {meters:.2f} meters\n")
     feet = meters * 3.28084
     feet_only = int(feet)
     inches = int((feet - feet_only) * 12)

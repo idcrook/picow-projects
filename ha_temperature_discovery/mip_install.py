@@ -57,6 +57,8 @@ mip.install("ds18x20")
 mip.install("github:peterhinch/micropython-mqtt", target="third-party")
 #mip.install("github:idcrook/MicroPython_BMPxxx", target="third-party")
 mip.install("github:bradcar/MicroPython_BMPxxx", target="third-party")
+# command line works tool
+# mpremote mip install --target "third-party" "github:bradcar/MicroPython_BMPxxx"
 
 sys.path.append("third-party")
 
