@@ -16,6 +16,7 @@ sys.path.append("/third-party")
 from mqtt_as import MQTTClient
 from mqtt_as import config as mqtt_config
 
+import config
 from config import ONEWIRE_CONFIG, I2C_CONFIG, APP_CONFIG
 from config import unique_device_identifier, set_mqtt_disc_dev_id, CFG_DEV
 from secrets import WIFI_SSID, WIFI_PASSWORD, MQTT_SERVER, MQTT_PORT, MQTT_USER, MQTT_PASSWORD
@@ -136,7 +137,7 @@ mqtt_config['ssid'] = WIFI_SSID
 mqtt_config['wifi_pw'] = WIFI_PASSWORD
 mqtt_config['server'] = MQTT_SERVER
 
-TOP_TOPIC = 'sandbox'
+TOP_TOPIC = config.get_top_topic()
 
 async def mqtt_discovery(client):
     srom_readable = list(found_sensors.keys())[0][-4:]

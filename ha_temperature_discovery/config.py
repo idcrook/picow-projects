@@ -8,6 +8,7 @@ def unique_device_identifier(mac_addr_hexlified):
     trailing_nibbles = mac_addr_hexlified.replace(":", "")[-3:]
     return trailing_nibbles
 
+TOP_TOPIC= 'sandbox'
 
 SWVER = "0.1"
 HWVER = "0.1"
@@ -32,3 +33,7 @@ def set_mqtt_disc_dev_id(identifiers):
         CFG_DEV['ids'] = list(*identifiers)
     else:
         CFG_DEV['ids'] = [identifiers]
+
+def get_top_topic():
+    """Top topic to use for Home Assistant MQTT."""
+    return TOP_TOPIC
