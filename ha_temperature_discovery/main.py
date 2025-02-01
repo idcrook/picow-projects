@@ -13,7 +13,7 @@ from ssd1306 import SSD1306_I2C
 from machine import Pin, I2C
 
 # Third party libraries
-sys.path.append("third-party")
+sys.path.append("/third-party")
 from mqtt_as import MQTTClient, config
 from micropython_bmpxxx import bmpxxx
 
@@ -88,7 +88,9 @@ if True:
             device = s_params['device']
             temperature = round(ds_sensor.read_temp(device), 1)
             print(s_id, temperature, "C")
-    except OneWireError:
+    except OneWireError as error:
+        print("error with", device)
+        print(error)
         # FIXME: hopefully a transient issue but add better handling
         pass
 

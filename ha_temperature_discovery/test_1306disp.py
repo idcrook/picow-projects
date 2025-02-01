@@ -7,7 +7,7 @@ import network
 
 from ssd1306 import SSD1306_I2C
 
-# sys.path.append("third-party")
+# sys.path.append("/third-party")
 # from secrets import WIFI_SSID, WIFI_PASSWORD
 
 ssd1306_width = 128
