@@ -1,18 +1,19 @@
 import errno
 import time
 import network
-import ubinascii
+import binascii
 import json
 import sys
 
 import asyncio
-from ssd1306 import SSD1306_I2C
-import onewire
 import ds18x20
-
-sys.path.append("third-party")
+import onewire
+from onewire import OneWireError
+from ssd1306 import SSD1306_I2C
+from machine import Pin
 
 # Third party libraries
+sys.path.append("third-party")
 from mqtt_as import MQTTClient, config
 from micropython_bmpxxx import bmpxxx
 
@@ -24,7 +25,7 @@ from secrets import WIFI_SSID, WIFI_PASSWORD, MQTT_SERVER, MQTT_PORT, MQTT_USER,
 ssid = WIFI_SSID
 password = WIFI_PASSWORD
 
-devname = APP_CONFIG.get("device_name", "picow99")
+devname = APP_CONFIG.setdefault("device_name", "picow999")
 
 # https://docs.micropython.org/en/latest/library/network.html#network.hostname
 network.hostname(devname)
@@ -32,9 +33,12 @@ wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
 wlan.connect(ssid, password)
 
-mac = ubinascii.hexlify(network.WLAN().config('mac'),':').decode()
-uid = unique_device_identifier(mac)
-print(mac, uid)
+mac = binascii.hexlify(network.WLAN().config('mac'),':').decode()
+udi = unique_device_identifier(mac)
+
+# use name and unique device ID to generate if not specified
+UNIQ_ID_PRE_ = APP_CONFIG.setdefault("unique_id", f"{devname}_{udi}_")
+print(devname, mac, udi, UNIQ_ID_PRE_)
 
 # Wait for connect or fail
 max_wait = 12
@@ -54,3 +58,40 @@ else:
 
 status = wlan.ifconfig()
 print('ip = ' + status[0])
+
+
+ds_pin = Pin(ONEWIRE_CONFIG.get("data_pin", 22))
+ds_sensor = ds18x20.DS18X20(onewire.OneWire(ds_pin))
+
+roms = ds_sensor.scan()
+#print (roms)
+
+sensors = ONEWIRE_CONFIG.get("sensors", {})
+#print(sensors)
+found_sensors = {}
+
+for device in roms:
+    s = binascii.hexlify(device)
+    readable_string = s.decode('ascii')
+    #print(readable_string)
+    if readable_string in sensors:
+        info = {}
+        info['name'] = sensors[readable_string]['name']
+        info['device'] = device
+        found_sensors[readable_string] = info
+
+
+print ("found 1-wire", found_sensors)
+
+while True:
+    ds_sensor.convert_temp()
+    time.sleep_ms(750)
+
+    try:
+        for s_id, s_params in found_sensors.items():
+            device = s_params['device']
+            temperature = round(ds_sensor.read_temp(device), 1)
+            print(s_id, temperature, "C")
+    except OneWireError:
+        # FIXME: hopefully a transient issue but add better handling
+        pass

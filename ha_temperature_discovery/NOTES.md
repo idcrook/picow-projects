@@ -424,6 +424,96 @@ oven_temp_down_btn.off()
 ```
 
 
+## MQTT explorer
+
+
+`homeassistant/sensor/0x286d970001037539/temperature/config`
+
+```
+{"availability":[{"topic":"zigbee2mqtt/bridge/state","value_template":"{{ value_json.state }}"}],"device":{"hw_version":0,"identifiers":["zigbee2mqtt_0x286d970001037539"],"manufacturer":"SmartThings","model":"Button","model_id":"IM6001-BTP01","name":"SmartThings Button 1","sw_version":"","via_device":"zigbee2mqtt_bridge_0x287681fffef04049"},"device_class":"temperature","enabled_by_default":true,"object_id":"smartthings_button_1_temperature","origin":{"name":"Zigbee2MQTT","sw":"2.0.0","url":"https://www.zigbee2mqtt.io"},"state_class":"measurement","state_topic":"zigbee2mqtt/SmartThings Button 1","unique_id":"0x286d970001037539_temperature_zigbee2mqtt","unit_of_measurement":"°C","value_template":"{{ value_json.temperature }}"}
+
+{
+  "availability": [
+    {
+      "topic": "zigbee2mqtt/bridge/state",
+      "value_template": "{{ value_json.state }}"
+    }
+  ],
+  "device": {
+    "hw_version": 0,
+    "identifiers": [
+      "zigbee2mqtt_0x286d970001037539"
+    ],
+    "manufacturer": "SmartThings",
+    "model": "Button",
+    "model_id": "IM6001-BTP01",
+    "name": "SmartThings Button 1",
+    "sw_version": "",
+    "via_device": "zigbee2mqtt_bridge_0x287681fffef04049"
+  },
+  "device_class": "temperature",
+  "enabled_by_default": true,
+  "object_id": "smartthings_button_1_temperature",
+  "origin": {
+    "name": "Zigbee2MQTT",
+    "sw": "2.0.0",
+    "url": "https://www.zigbee2mqtt.io"
+  },
+  "state_class": "measurement",
+  "state_topic": "zigbee2mqtt/SmartThings Button 1",
+  "unique_id": "0x286d970001037539_temperature_zigbee2mqtt",
+  "unit_of_measurement": "°C",
+  "value_template": "{{ value_json.temperature }}"
+}
+
+```
+
 ## non-micropython
 
 <https://github.com/unixorn/ha-mqtt-discoverable#sensor>
+
+
+homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-batt/config
+```
+{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-batt","uniq_id":"A4C138C38EE5-LYWSD03MMC-batt","dev_cla":"battery","val_tpl":"{{ value_json.batt | is_defined }}","unit_of_meas":"%","device":
+{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
+{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-batt","uniq_id":"A4C138C38EE5-LYWSD03MMC-batt","dev_cla":"battery","val_tpl":"{{ value_json.batt | is_defined }}","unit_of_meas":"%","device":{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
+```
+homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-volt/config
+```
+{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-volt","uniq_id":"A4C138C38EE5-LYWSD03MMC-volt","val_tpl":"{{ value_json.volt | is_defined }}","unit_of_meas":"V","device":{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
+```
+homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-tempc/config
+```
+{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-tempc","uniq_id":"A4C138C38EE5-LYWSD03MMC-tempc","dev_cla":"temperature","val_tpl":"{{ value_json.tempc | is_defined }}","unit_of_meas":"Â°C","device":{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
+```
+homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-tempf/config
+```
+{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-tempf","uniq_id":"A4C138C38EE5-LYWSD03MMC-tempf","dev_cla":"temperature","val_tpl":"{{ value_json.tempf | is_defined }}","unit_of_meas":"F","device":{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
+```
+homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-hum/config
+```
+```
+homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-volt/config
+```
+{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-volt","uniq_id":"A4C138C38EE5-LYWSD03MMC-volt","val_tpl":"{{ value_json.volt | is_defined }}","unit_of_meas":"V","device":{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
+```
+homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-tempc/config
+```
+{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-tempc","uniq_id":"A4C138C38EE5-LYWSD03MMC-tempc","dev_cla":"temperature","val_tpl":"{{ value_json.tempc | is_defined }}","unit_of_meas":"Â°C","device":{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
+```
+homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-tempf/config
+```
+{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-tempf","uniq_id":"A4C138C38EE5-LYWSD03MMC-tempf","dev_cla":"temperature","val_tpl":"{{ value_json.tempf | is_defined }}","unit_of_meas":"F","device":{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
+```
+homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-hum/config
+```
+{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-hum","uniq_id":"A4C138C38EE5-LYWSD03MMC-hum","dev_cla":"humidity","val_tpl":"{{ value_json.hum | is_defined }}","unit_of_meas":"%","device":{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
+{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-hum","uniq_id":"A4C138C38EE5-LYWSD03MMC-hum","dev_cla":"humidity","val_tpl":"{{ value_json.hum | is_defined }}","unit_of_meas":"%","device":"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
+```
+
+For this message :
+```
+{"id":"A4:C1:38:C3:8E:E5","name":"ATC_C38EE5","rssi":-73,"model":"LYWSD03MMC_ATC","tempc":24.3,"tempf":75.74,"hum":50,"batt":49,"volt":2.522}
+```
+```

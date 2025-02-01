@@ -5,11 +5,14 @@ from device import ONEWIRE_CONFIG, I2C_CONFIG, APP_CONFIG
 def unique_device_identifier(mac_addr_hexlified):
     "Use MAC address to generate a unique string for this device."
 
+    global UDI
     # Let's start with last three nibbles of MAC address
     trailing_nibbles = mac_addr_hexlified.replace(":", "")[-3:]
     return trailing_nibbles
 
 
+def init():
+    dev_id = APP_CONFIG.setdefault("device_name", "picow999")
 
 
 # # FIXME: generate from device MAC, say trailing 3 nibbles
