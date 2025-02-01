@@ -12,6 +12,7 @@ ONEWIRE_CONFIG = {
 
 I2C_CONFIG = {
     "bus": {
+        "bus_number": 0,
         "sda_pin": 4,
         "scl_pin": 5
     },
@@ -26,7 +27,7 @@ I2C_CONFIG = {
           {
               "address": 60,
               "width": 128,
-              "height": 64,
+              "height": 32,
           }
          }
     ]
