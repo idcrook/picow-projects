@@ -10,6 +10,279 @@
 ## Discovery
 
 
+ <https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery>
+ <https://www.home-assistant.io/integrations/mqtt/#configuration-via-mqtt-discovery>
+ <https://www.home-assistant.io/integrations/sensor.mqtt/>
+ <https://www.home-assistant.io/integrations/sensor.mqtt/#temperature-and-humidity-sensors>
+
+ Outline of Home Assistant MQTT discovery for sensor
+
+### Discovery messages
+
+
+Configuration topic no1: homeassistant/sensor/picow0_940/abcd/config
+Configuration topic no2: homeassistant/sensor/picow0_940/abd1/config
+Configuration topic no3: homeassistant/sensor/picow0_940/abd2/config
+Configuration topic no4: homeassistant/sensor/picow0_940/abd4/config
+Configuration topic no5: homeassistant/sensor/picow0_940/bmeT/config
+Configuration topic no6: homeassistant/sensor/picow0_940/bmeH/config
+
+state topic (shared):    homeassistant/sensor/picow0_940/state
+
+```javascript
+{
+  "stat_t": "home/sensor/picow0_940/state",
+  "name": "picow0_940-bed1_temp",
+  "uniq_id": "picow0_940-abcd-bed1_temp",
+  "dev_cla": "temperature",
+  "val_tpl": "{{ value_json.bed1_temperature | is_defined }}",
+  "unit_of_meas": "F",
+  "device": {
+    "name": "picow0_940",
+    "manufacturer": "idcrook-labs",
+    "model": "seed-o-matic",
+    "model_id": "K9",
+    "serial_number": "MACADDR",
+    "hw_version": "1.01a",
+    "sw_version": "2024.1.0",
+    "identifiers": [
+      "picow0_940"
+    ]
+  }
+}
+```
+
+bed2 temperature
+
+```javascript
+{
+  "stat_t": "home/sensor/picow0_940/state",
+  "name": "picow0_940-bed2_temp",
+  "uniq_id": "picow0_940-abd1-bed2_temp",
+  "dev_cla": "temperature",
+  "val_tpl": "{{ value_json.bed2_temperature | is_defined }}",
+  "unit_of_meas": "F",
+  "device": {
+    "identifiers": [
+      "picow0_940"
+    ]
+  }
+}
+```
+
+
+temperature ambient
+
+```javascript
+{
+  "stat_t": "home/sensor/picow0_940/state",
+  "name": "picow0_940-amb_temp",
+  "uniq_id": "picow0_940-bme-amb_temp",
+  "dev_cla": "temperature",
+  "val_tpl": "{{ value_json.temperature_ambient | is_defined }}",
+  "unit_of_meas": "F",
+  "device": {
+    "identifiers": [
+      "picow0_940"
+    ]
+  }
+}
+```
+
+
+humidity ambient
+
+```javascript
+{
+  "stat_t": "home/sensor/picow0_940/state",
+  "name": "picow0_940-amb_humid",
+  "uniq_id": "picow0_940-bme-amb_humid",
+  "dev_cla": "temperature",
+  "val_tpl": "{{ value_json.humidity_ambient | is_defined }}",
+  "unit_of_meas": "%",
+  "device": {
+    "identifiers": [
+      "picow0_940"
+    ]
+  }
+}
+```
+
+
+
+
+state payload
+
+```json
+{
+    "bed1_temperature": 68.2,
+    "bed2_temperature": 70.9,
+    "bed3_temperature": 71.3,
+    "humidity_ambient": 35.7,
+    "temperature_ambient": 59.3
+}
+```
+
+
+
+#### Discovery topic
+
+
+ `<discovery_prefix>/<component>/[<node_id>/]<object_id>/config`
+
+ Device (all components at once)
+   `homeassistant/device/...`
+
+ Multiple
+   `homeassistant/sensor/[]/OID/config`
+
+#### Disocvery payload
+
+https://www.home-assistant.io/integrations/mqtt/#sensors
+
+The shared options at the root level of the JSON message must include:
+
+ - `device` mapping (abbreviated as `dev`)
+ - `origin` mapping (abbreviated as `o`)
+
+Examples
+
+Configuration topic no1: homeassistant/sensor/sensorBedroomT/config
+Configuration topic no2: homeassistant/sensor/sensorBedroomH/config
+
+state topic (shared):    homeassistant/sensor/sensorBedroom/state
+
+.device.identifiers [ "SHARED" ]
+
+payload no1
+
+```
+{
+   "device_class":"temperature",
+   "state_topic":"homeassistant/sensor/sensorBedroom/state",
+   "unit_of_measurement":"°F",
+   "value_template":"{{ value_json.temperature_bed1}}",
+   "unique_id":"temp01ae",
+   "device":{
+      "identifiers":[
+          "bedroom01ae"
+      ],
+      "name":"Bedroom",
+      "manufacturer": "Example sensors Ltd.",
+      "model": "Example Sensor",
+      "model_id": "K9",
+      "serial_number": "12AE3010545",
+      "hw_version": "1.01a",
+      "sw_version": "2024.1.0",
+      "configuration_url": "https://example.com/sensor_portal/config"
+   }
+}
+```
+
+
+payload no2
+
+```
+{
+   "device_class":"humidity",
+   "state_topic":"homeassistant/sensor/sensorBedroom/state",
+   "unit_of_measurement":"%",
+   "value_template":"{{ value_json.humidity}}",
+   "unique_id":"hum01ae",
+   "device":{
+      "identifiers":[
+         "bedroom01ae"
+      ]
+   }
+}
+```
+
+
+
+
+smart button
+
+ - `homeassistant/sensor/0x286d970001037539/temperature/config`
+
+```
+{
+  "availability": [
+    {
+      "topic": "zigbee2mqtt/bridge/state",
+      "value_template": "{{ value_json.state }}"
+    }
+  ],
+  "device": {
+    "hw_version": 0,
+    "identifiers": [
+      "zigbee2mqtt_0x286d970001037539"
+    ],
+    "manufacturer": "SmartThings",
+    "model": "Button",
+    "model_id": "IM6001-BTP01",
+    "name": "SmartThings Button 1",
+    "sw_version": "",
+    "via_device": "zigbee2mqtt_bridge_0x287681fffef04049"
+  },
+  "device_class": "temperature",
+  "enabled_by_default": true,
+  "object_id": "smartthings_button_1_temperature",
+  "origin": {
+    "name": "Zigbee2MQTT",
+    "sw": "2.0.0",
+    "url": "https://www.zigbee2mqtt.io"
+  },
+  "state_class": "measurement",
+  "state_topic": "zigbee2mqtt/SmartThings Button 1",
+  "unique_id": "0x286d970001037539_temperature_zigbee2mqtt",
+  "unit_of_measurement": "°C",
+  "value_template": "{{ value_json.temperature }}"
+}
+
+```
+
+ -  `homeassistant/event/0x286d970001037539/action/config`
+
+```
+{
+  "availability": [
+    {
+      "topic": "zigbee2mqtt/bridge/state",
+      "value_template": "{{ value_json.state }}"
+    }
+  ],
+  "device": {
+    "hw_version": 0,
+    "identifiers": [
+      "zigbee2mqtt_0x286d970001037539"
+    ],
+    "manufacturer": "SmartThings",
+    "model": "Button",
+    "model_id": "IM6001-BTP01",
+    "name": "SmartThings Button 1",
+    "sw_version": "",
+    "via_device": "zigbee2mqtt_bridge_0x287681fffef04049"
+  },
+  "event_types": [
+    "off",
+    "single",
+    "double",
+    "hold"
+  ],
+  "icon": "mdi:gesture-double-tap",
+  "name": "Action",
+  "object_id": "smartthings_button_1_action",
+  "origin": {
+    "name": "Zigbee2MQTT",
+    "sw": "2.0.0",
+    "url": "https://www.zigbee2mqtt.io"
+  },
+  "state_topic": "zigbee2mqtt/SmartThings Button 1",
+  "unique_id": "0x286d970001037539_action_zigbee2mqtt",
+  "value_template": "{% set patterns = [\n{\"pattern\": '^(?P<button>(?:button_)?[a-z0-9]+)_(?P<action>(?:press|hold)(?:_release)?)$', \"groups\": [\"button\", \"action\"]},\n{\"pattern\": '^(?P<action>recall|scene)_(?P<scene>[0-2][0-9]{0,2})$', \"groups\": [\"action\", \"scene\"]},\n{\"pattern\": '^(?P<actionPrefix>region_)(?P<region>[1-9]|10)_(?P<action>enter|leave|occupied|unoccupied)$', \"groups\": [\"actionPrefix\", \"region\", \"action\"]},\n{\"pattern\": '^(?P<action>dial_rotate)_(?P<direction>left|right)_(?P<speed>step|slow|fast)$', \"groups\": [\"action\", \"direction\", \"speed\"]},\n{\"pattern\": '^(?P<action>brightness_step)(?:_(?P<direction>up|down))?$', \"groups\": [\"action\", \"direction\"]}\n] %}\n{% set action_value = value_json.action|default('') %}\n{% set ns = namespace(r=[('action', action_value)]) %}\n{% for p in patterns %}\n  {% set m = action_value|regex_findall(p.pattern) %}\n  {% if m[0] is undefined %}{% continue %}{% endif %}\n  {% for key, value in zip(p.groups, m[0]) %}\n    {% set ns.r = ns.r|rejectattr(0, 'eq', key)|list + [(key, value)] %}\n  {% endfor %}\n{% endfor %}\n{% if (ns.r|selectattr(0, 'eq', 'actionPrefix')|first) is defined %}\n  {% set ns.r = ns.r|rejectattr(0, 'eq', 'action')|list + [('action', ns.r|selectattr(0, 'eq', 'actionPrefix')|map(attribute=1)|first + ns.r|selectattr(0, 'eq', 'action')|map(attribute=1)|first)] %}\n{% endif %}\n{% set ns.r = ns.r + [('event_type', ns.r|selectattr(0, 'eq', 'action')|map(attribute=1)|first)] %}\n{{dict.from_keys(ns.r|rejectattr(0, 'in', ('action', 'actionPrefix'))|reject('eq', ('event_type', None))|reject('eq', ('event_type', '')))|to_json}}"
+}
+```
+
 https://www.home-assistant.io/integrations/mqtt/#single-component-discovery-payload
 
 
@@ -186,57 +459,9 @@ mqtt:
 # Publishing
 
 
-ensors
 Setting up a sensor with multiple measurement values requires multiple consecutive configuration topic submissions.
 
-Configuration topic no1: `homeassistant/sensor/sensorBedroomT/config`
-Configuration payload no1:
-
-```json
-{
-   "device_class":"temperature",
-   "state_topic":"homeassistant/sensor/sensorBedroom/state",
-   "unit_of_measurement":"°C",
-   "value_template":"{{ value_json.temperature}}",
-   "unique_id":"temp01ae",
-   "device":{
-      "identifiers":[
-          "bedroom01ae"
-      ],
-      "name":"Bedroom",
-      "manufacturer": "Example sensors Ltd.",
-      "model": "Example Sensor",
-      "model_id": "K9",
-      "serial_number": "12AE3010545",
-      "hw_version": "1.01a",
-      "sw_version": "2024.1.0",
-      "configuration_url": "https://example.com/sensor_portal/config"
-   }
-}
-```
-
-Configuration topic no2: `homeassistant/sensor/sensorBedroomH/config`
-Configuration payload no2:
-
-```json
-{
-   "device_class":"humidity",
-   "state_topic":"homeassistant/sensor/sensorBedroom/state",
-   "unit_of_measurement":"%",
-   "value_template":"{{ value_json.humidity}}",
-   "unique_id":"hum01ae",
-   "device":{
-      "identifiers":[
-         "bedroom01ae"
-      ]
-   }
-}
-```
-
 The sensor identifiers or connections option allows to set up multiple entities that share the same device.
-
- Note
-
 
 If a device configuration is shared, then it is not needed to add all device details to the other entity configs. It is enough to add shared identifiers or connections to the device mapping for the other entity config payloads.
 
@@ -244,12 +469,6 @@ A common state payload that can be parsed with the value_template in the sensor 
 
 
 
-```json
-{
-   "temperature":23.20,
-   "humidity":43.70
-}
-```
 
 https://github.com/zeit0dn1/Temp-Sensor/blob/main/main.py
 
@@ -348,90 +567,13 @@ code_url = "http://nn.nn.nn.nn:80/local/code/"
 
 <https://github.com/prairiesnpr/rpi_pico_w_PMS7003_mqtt/blob/master/def_secrets.py>
 
-```python
-from secrets import WIFI_AP, WIFI_PWD, MQTT_HOST
-
-from constants import (
-    SUB_TPC,
-    AV_TPC,
-    AV_MSG,
-    CFG_MSG,
-    ID,
-    MQTT_PREFIX,
-    TMP_ST_TPC,
-    MD_ST_TPC,
-    MODE_HEAT,
-    MODE_OFF,
-    START_TMP,
-    TMP_CMD_TPC,
-    MIN_TEMP,
-    MAX_TMP,
-    MD_CMD_TPC,
-    AV_MODES,
-    DEB_TIME,
-    TMP_STEP,
-    DIR_DWN,
-    DIR_UP,
-    BTN_DELAY,
-    TMP_CUR_TPC,
-    CUR_TMP_RD_PER,
-    BTN_STEP_DELAY,
-    BTN_HT_DELAY,
-    BTN_CLD_DELAY,
-    V_IN,
-    R_TEMP,
-    C_F_MULT,
-    C_F_OFFSET,
-    U16_MAX,
-)
-
-from constants import (
-    ST_ON_PIN,
-    ST_CL_PIN,
-    ST_UP_PIN,
-    ST_DN_PIN,
-    ST_HT_IN_PIN,
-    ST_T_AIN_PIN,
-    ST_UP_AIN_PIN,
-    ST_DN_AIN_PIN,
-    CONSIDER_OFF,
-)
-
-from constants import KELVIN_C, A, B, C, T_CORR
-from constants import FIR_COEFF, FIR_SCALE
-
-# Local configuration
-config["ssid"] = WIFI_AP
-config["wifi_pw"] = WIFI_PWD
-config["server"] = MQTT_HOST
-
-cur_mode = MODE_OFF
-cur_set_temp = START_TMP
-cur_act_temp = MIN_TEMP  # Need something?
-cur_act_temp_raw = 0
-
-disable_in_btn = False
-
-
-oven_on_btn = Pin(ST_ON_PIN, Pin.OUT)
-oven_on_btn.off()
-oven_clear_off_btn = Pin(ST_CL_PIN, Pin.OUT)
-oven_clear_off_btn.off()
-oven_temp_up_btn = Pin(ST_UP_PIN, Pin.OUT)  # is oven on
-oven_temp_up_btn.off()
-oven_temp_down_btn = Pin(ST_DN_PIN, Pin.OUT)
-oven_temp_down_btn.off()
-```
-
 
 ## MQTT explorer
 
 
 `homeassistant/sensor/0x286d970001037539/temperature/config`
 
-```
-{"availability":[{"topic":"zigbee2mqtt/bridge/state","value_template":"{{ value_json.state }}"}],"device":{"hw_version":0,"identifiers":["zigbee2mqtt_0x286d970001037539"],"manufacturer":"SmartThings","model":"Button","model_id":"IM6001-BTP01","name":"SmartThings Button 1","sw_version":"","via_device":"zigbee2mqtt_bridge_0x287681fffef04049"},"device_class":"temperature","enabled_by_default":true,"object_id":"smartthings_button_1_temperature","origin":{"name":"Zigbee2MQTT","sw":"2.0.0","url":"https://www.zigbee2mqtt.io"},"state_class":"measurement","state_topic":"zigbee2mqtt/SmartThings Button 1","unique_id":"0x286d970001037539_temperature_zigbee2mqtt","unit_of_measurement":"°C","value_template":"{{ value_json.temperature }}"}
-
+```json
 {
   "availability": [
     {
@@ -475,45 +617,92 @@ oven_temp_down_btn.off()
 
 homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-batt/config
 ```
-{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-batt","uniq_id":"A4C138C38EE5-LYWSD03MMC-batt","dev_cla":"battery","val_tpl":"{{ value_json.batt | is_defined }}","unit_of_meas":"%","device":
-{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
-{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-batt","uniq_id":"A4C138C38EE5-LYWSD03MMC-batt","dev_cla":"battery","val_tpl":"{{ value_json.batt | is_defined }}","unit_of_meas":"%","device":{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
+{
+  "stat_t": "home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5",
+  "name": "LYWSD03MMC-batt",
+  "uniq_id": "A4C138C38EE5-LYWSD03MMC-batt",
+  "dev_cla": "battery",
+  "val_tpl": "{{ value_json.batt | is_defined }}",
+  "unit_of_meas": "%",
+  "device": {
+    "name": "A4C138C38EE5",
+    "model": "LYWSD03MMC",
+    "manufacturer": "OMG_community",
+    "identifiers": [
+      "A4C138C38EE5"
+    ]
+  }
+}
 ```
 homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-volt/config
 ```
-{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-volt","uniq_id":"A4C138C38EE5-LYWSD03MMC-volt","val_tpl":"{{ value_json.volt | is_defined }}","unit_of_meas":"V","device":{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
+{
+  "stat_t": "home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5",
+  "name": "LYWSD03MMC-volt",
+  "uniq_id": "A4C138C38EE5-LYWSD03MMC-volt",
+  "val_tpl": "{{ value_json.volt | is_defined }}",
+  "unit_of_meas": "V",
+  "device": {
+    "name": "A4C138C38EE5",
+    "model": "LYWSD03MMC",
+    "manufacturer": "OMG_community",
+    "identifiers": [
+      "A4C138C38EE5"
+    ]
+  }
+}
 ```
 homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-tempc/config
 ```
-{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-tempc","uniq_id":"A4C138C38EE5-LYWSD03MMC-tempc","dev_cla":"temperature","val_tpl":"{{ value_json.tempc | is_defined }}","unit_of_meas":"Â°C","device":{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
+{
+  "stat_t": "home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5",
+  "name": "LYWSD03MMC-tempc",
+  "uniq_id": "A4C138C38EE5-LYWSD03MMC-tempc",
+  "dev_cla": "temperature",
+  "val_tpl": "{{ value_json.tempc | is_defined }}",
+  "unit_of_meas": "Â°C",
+  "device": {
+    "name": "A4C138C38EE5",
+    "model": "LYWSD03MMC",
+    "manufacturer": "OMG_community",
+    "identifiers": [
+      "A4C138C38EE5"
+    ]
+  }
+}
 ```
-homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-tempf/config
-```
-{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-tempf","uniq_id":"A4C138C38EE5-LYWSD03MMC-tempf","dev_cla":"temperature","val_tpl":"{{ value_json.tempf | is_defined }}","unit_of_meas":"F","device":{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
-```
+
 homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-hum/config
 ```
-```
-homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-volt/config
-```
-{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-volt","uniq_id":"A4C138C38EE5-LYWSD03MMC-volt","val_tpl":"{{ value_json.volt | is_defined }}","unit_of_meas":"V","device":{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
-```
-homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-tempc/config
-```
-{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-tempc","uniq_id":"A4C138C38EE5-LYWSD03MMC-tempc","dev_cla":"temperature","val_tpl":"{{ value_json.tempc | is_defined }}","unit_of_meas":"Â°C","device":{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
-```
-homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-tempf/config
-```
-{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-tempf","uniq_id":"A4C138C38EE5-LYWSD03MMC-tempf","dev_cla":"temperature","val_tpl":"{{ value_json.tempf | is_defined }}","unit_of_meas":"F","device":{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
-```
-homeassistant/sensor/A4C138C38EE5-LYWSD03MMC-hum/config
-```
-{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-hum","uniq_id":"A4C138C38EE5-LYWSD03MMC-hum","dev_cla":"humidity","val_tpl":"{{ value_json.hum | is_defined }}","unit_of_meas":"%","device":{"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
-{"stat_t":"home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5","name":"LYWSD03MMC-hum","uniq_id":"A4C138C38EE5-LYWSD03MMC-hum","dev_cla":"humidity","val_tpl":"{{ value_json.hum | is_defined }}","unit_of_meas":"%","device":"name":"A4C138C38EE5","model":"LYWSD03MMC","manufacturer":"OMG_community","identifiers":["A4C138C38EE5"]}}
+{
+  "stat_t": "home/OpenMQTTGateway_ESP32_BLE/BTtoMQTT/A4C138C38EE5",
+  "name": "LYWSD03MMC-hum",
+  "uniq_id": "A4C138C38EE5-LYWSD03MMC-hum",
+  "dev_cla": "humidity",
+  "val_tpl": "{{ value_json.hum | is_defined }}",
+  "unit_of_meas": "%",
+  "device": {
+    "name": "A4C138C38EE5",
+    "model": "LYWSD03MMC",
+    "manufacturer": "OMG_community",
+    "identifiers": [
+      "A4C138C38EE5"
+    ]
+  }
+}
 ```
 
 For this message :
 ```
-{"id":"A4:C1:38:C3:8E:E5","name":"ATC_C38EE5","rssi":-73,"model":"LYWSD03MMC_ATC","tempc":24.3,"tempf":75.74,"hum":50,"batt":49,"volt":2.522}
-```
+{
+  "id": "A4:C1:38:C3:8E:E5",
+  "name": "ATC_C38EE5",
+  "rssi": -73,
+  "model": "LYWSD03MMC_ATC",
+  "tempc": 24.3,
+  "tempf": 75.74,
+  "hum": 50,
+  "batt": 49,
+  "volt": 2.522
+}
 ```
