@@ -110,6 +110,8 @@ for sensor in I2C_CONFIG.get('sensors', []):
     for s_type, s_params in sensor.items():
         if s_type == 'bme280':
             address = s_params.setdefault('address', 0x77)
+            # FIXME: Handle RuntimeError if not found, e.g.
+            # RuntimeError: BME280 sensor not found at specified I2C address (0x77).
             this = bmpxxx.BME280(i2c, address=address)
             info = {}
             info['device_type'] = s_type
