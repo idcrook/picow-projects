@@ -219,4 +219,4 @@ while True:
             state_update['temperature_ambient'] = cvt_CtoF(temperature)
 
     print("latest values", json.dumps(state_update))
-    time.sleep(5)
+    time.sleep(APP_CONFIG.get('sensor_read_interval_seconds', 30))

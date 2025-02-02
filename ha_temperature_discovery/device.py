@@ -37,5 +37,6 @@ I2C_CONFIG = {
 APP_CONFIG = {
     "sensor_read_interval_seconds": 30,
     "device_name": "picow0",
+    "display_temperature_values": False,
     # "unique_id"
 }
