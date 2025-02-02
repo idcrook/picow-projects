@@ -14,10 +14,13 @@ from machine import Pin, I2C
 
 # Third party libraries
 sys.path.append("/third-party")
-from mqtt_as import MQTTClient, config
+from mqtt_as import MQTTClient
+from mqtt_as import config as mqtt_config
 from micropython_bmpxxx import bmpxxx
 
-from config import ONEWIRE_CONFIG, I2C_CONFIG, APP_CONFIG, unique_device_identifier
+import config
+from config import ONEWIRE_CONFIG, I2C_CONFIG, APP_CONFIG
+from config import unique_device_identifier, set_mqtt_disc_dev_id, CFG_DEV
 from secrets import WIFI_SSID, WIFI_PASSWORD, MQTT_SERVER, MQTT_PORT, MQTT_USER, MQTT_PASSWORD
 
 ssid = WIFI_SSID
@@ -34,8 +37,10 @@ mac = binascii.hexlify(network.WLAN().config('mac'),':').decode()
 udi = unique_device_identifier(mac)
 
 # use name and unique device ID to generate if not specified
-UNIQ_ID_PRE_ = APP_CONFIG.setdefault("unique_id", f"{DEVNAME}_{udi}_")
-print(DEVNAME, mac, udi, UNIQ_ID_PRE_)
+UNIQ_ID_PRE = APP_CONFIG.setdefault("unique_id", f"{DEVNAME}_{udi}")
+print(DEVNAME, mac, udi, UNIQ_ID_PRE)
+set_mqtt_disc_dev_id(UNIQ_ID_PRE)
+print(CFG_DEV)
 
 # Wait for connect or fail
 max_wait = 12
@@ -169,7 +174,7 @@ if len(i2c_displays):
         display = SSD1306_I2C(w, h, i2c)
         display.fill(0)
         display.text(DEVNAME, 0, 0, 1)
-        display.text(UNIQ_ID_PRE_, 0, 12, 1)
+        display.text(UNIQ_ID_PRE, 0, 12, 1)
         display.show()
         info = {'device_type': d_type, 'interface': display }
         info.update(d_params)
@@ -188,35 +193,136 @@ print(SENSOR_STATES_TO_USE)
 def cvt_CtoF(temperature):
     return (9. / 5.) * temperature + 32.0
 
-while True:
-    state_update = {}
+async def messages(client):  # Respond to incoming messages
+    # If MQTT V5is used this would read
+    # async for topic, msg, retained, properties in client.queue:
+    async for topic, msg, retained in client.queue:
+        print(topic.decode(), msg.decode(), retained)
 
-    DS_SENSOR_IFC.convert_temp()
-    time.sleep_ms(750)
+async def up(client):  # Respond to connectivity being (re)established
+    while True:
+        await client.up.wait()  # Wait on an Event
+        client.up.clear()
+        # await client.subscribe('foo_topic', 1)  # renew subscriptions
 
-    try:
-        for s_id, s_params in DS_SENSORS_FOUND.items():
-            device = s_params['interface']
-            name = s_params['name']
-            state_name = _get_ds_state_name(name)
-            temperature = round(DS_SENSOR_IFC.read_temp(device), 1)
-            print(s_id, name, temperature, "C")
-            state_update[state_name] = cvt_CtoF(temperature)
-    except OneWireError as error:
-        print("error with", device)
-        print(error)
-        # FIXME: hopefully a transient issue but add better handling
-        pass
+async def main(client):
+    await client.connect()
+    for coroutine in (up, messages):
+        asyncio.create_task(coroutine(client))
+    n = 0
+    state_topic = await mqtt_discovery(client)
+
+    while True:
+        state_update = {}
+
+        DS_SENSOR_IFC.convert_temp()
+        time.sleep_ms(750)
+
+        try:
+            for s_id, s_params in DS_SENSORS_FOUND.items():
+                device = s_params['interface']
+                name = s_params['name']
+                state_name = _get_ds_state_name(name)
+                temperature = round(DS_SENSOR_IFC.read_temp(device), 1)
+                # print(s_id, name, temperature, "C")
+                state_update[state_name] = cvt_CtoF(temperature)
+        except OneWireError as error:
+            print("error with", device)
+            print(error)
+            # FIXME: hopefully a transient issue but add better handling
+            pass
+
+        for i2c_address, s_params in I2C_SENSORS_FOUND.items():
+            sensor_interface = s_params['interface']
+            name = s_params['device_type']
+            if name == 'bme280':
+                temperature = round(sensor_interface.temperature, 1)
+                humidity = round(sensor_interface.humidity, 1)
+                # print(f"{name}:> {temperature:.1f}C rel humid:{humidity:.1f}% dewpt:{dewpoint:.1f}C")
+                state_update['humidity_ambient'] = humidity
+                state_update['temperature_ambient'] = cvt_CtoF(temperature)
+
+        pub_payload = json.dumps(state_update)
+        # print(state_topic, pub_payload)
+        await client.publish(state_topic, pub_payload, qos=1)
+        await asyncio.sleep(APP_CONFIG.get('sensor_read_interval_seconds', 30))
+
+
+async def mqtt_discovery(client):
+
+    state_topic = TOP_TOPIC + f"/sensor/{UNIQ_ID_PRE}/state"
+
+    first_ds = True
+    for s_id, s_params in DS_SENSORS_FOUND.items():
+        readable = s_params['object_id']
+        name =  s_params['name']
+        state_name = _get_ds_state_name(name)
+        topic = TOP_TOPIC + f"/sensor/{UNIQ_ID_PRE}/{readable}/config"
+        payload = {
+            "stat_t": state_topic,
+            "name": f"{name}_temp",
+            "uniq_id": f"{UNIQ_ID_PRE}-{readable}-{name}_temp",
+            "dev_cla": "temperature",
+            "val_tpl": f"{{{{ value_json.{state_name} | is_defined }}}}",
+            "unit_of_meas": "°F",
+        }
+        if first_ds:
+            first_ds = False
+            payload.update(CFG_DEV)
+        else:
+            payload['ids'] = CFG_DEV['ids']
+
+        #print(topic, json.dumps(payload))
+        await client.publish(topic, json.dumps(payload), qos=1)
 
     for i2c_address, s_params in I2C_SENSORS_FOUND.items():
-        sensor_interface = s_params['interface']
         name = s_params['device_type']
-        if name == 'bme280':
-            temperature = round(sensor_interface.temperature, 1)
-            humidity = round(sensor_interface.humidity, 1)
-            print(f"{name}:> {temperature:.1f}C rel humid:{humidity:.1f}% dewpt:{dewpoint:.1f}C")
-            state_update['humidity_ambient'] = humidity
-            state_update['temperature_ambient'] = cvt_CtoF(temperature)
+        address = s_params['address']
+        valueT = 'temperature_ambient'
+        topicT = TOP_TOPIC + f"/sensor/{UNIQ_ID_PRE}/ambT/config"
+        payloadT = {
+            "stat_t": state_topic,
+            "name": "amb_temp",
+            "uniq_id": f"{UNIQ_ID_PRE}-{name}-{address}-amb_temp",
+            "dev_cla": "temperature",
+            "val_tpl": f"{{{{ value_json.{valueT} | is_defined }}}}",
+            "unit_of_meas": "°F",
+        }
+        payloadT['ids'] = CFG_DEV['ids']
+        #print(topicT, json.dumps(payloadT))
+        await client.publish(topicT, json.dumps(payloadT), qos=1)
 
-    print("latest values", json.dumps(state_update))
-    time.sleep(APP_CONFIG.get('sensor_read_interval_seconds', 30))
+        valueH = 'humidity_ambient'
+        topicH = TOP_TOPIC + f"/sensor/{UNIQ_ID_PRE}/ambH/config"
+        payloadH = {
+            "stat_t": state_topic,
+            "name": "amb_humid",
+            "uniq_id": f"{UNIQ_ID_PRE}-{name}-{address}-amb_humid",
+            "dev_cla": "humidity",
+            "val_tpl": f"{{{{ value_json.{valueH} | is_defined }}}}",
+            "unit_of_meas": "%",
+        }
+        payloadT['ids'] = CFG_DEV['ids']
+        #print(topicH, json.dumps(payloadH))
+        await client.publish(topicH, json.dumps(payloadH), qos=1)
+
+
+    return state_topic
+
+TOP_TOPIC = config.get_top_topic()
+
+mqtt_config['ssid'] = WIFI_SSID
+mqtt_config['wifi_pw'] = WIFI_PASSWORD
+mqtt_config['server'] = MQTT_SERVER
+mqtt_config["queue_len"] = 1  # Use event interface with default queue size
+MQTTClient.DEBUG = True  # Optional: print diagnostic messages
+client = MQTTClient(mqtt_config)
+
+# on macOS: brew install mosquitto
+print(f"mosquitto_sub -h {MQTT_SERVER} -t {TOP_TOPIC}/sensor/{UNIQ_ID_PRE}/\\#")
+
+
+try:
+    asyncio.run(main(client))
+finally:
+    client.close()  # Prevent LmacRxBlk:1 errors

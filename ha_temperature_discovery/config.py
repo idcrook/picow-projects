@@ -8,7 +8,8 @@ def unique_device_identifier(mac_addr_hexlified):
     trailing_nibbles = mac_addr_hexlified.replace(":", "")[-3:]
     return trailing_nibbles
 
-TOP_TOPIC= 'sandbox'
+#TOP_TOPIC= 'sandbox'
+TOP_TOPIC= 'homeassistant'
 
 SWVER = "0.1"
 HWVER = "0.1"
