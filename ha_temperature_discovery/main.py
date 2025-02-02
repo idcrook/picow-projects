@@ -56,37 +56,54 @@ else:
 status = wlan.ifconfig()
 print('ip = ' + status[0])
 
+
+########################################################################
+#  Detect devices from the config files
+SENSOR_STATES_TO_USE = {
+    "bed1_temperature": None,
+    "bed2_temperature": None,
+    "bed3_temperature": None,
+    "humidity_ambient": None,
+    "temperature_ambient": None
+}
+
+def _get_ds_state_name(name):
+    return  f"{name}_temperature"
+
+########################################################################
 # 1-wire configs
 ds_pin = Pin(ONEWIRE_CONFIG.get("data_pin", 22))
-ds_sensor = ds18x20.DS18X20(onewire.OneWire(ds_pin))
+DS_SENSOR_IFC = ds18x20.DS18X20(onewire.OneWire(ds_pin))
 
-roms = ds_sensor.scan()
-#print (roms)
+DS_SENSORS = ONEWIRE_CONFIG.get("sensors", {})
+DS_SENSORS_FOUND = {}
 
-sensors = ONEWIRE_CONFIG.get("sensors", {})
-#print(sensors)
 
-found_sensors = {}
+roms = DS_SENSOR_IFC.scan()
 for device in roms:
     s = binascii.hexlify(device)
-    readable_string = s.decode('ascii')
-    #print(readable_string)
-    if readable_string in sensors:
+    readable = s.decode('ascii')
+    #print(readable)
+    if readable in DS_SENSORS:
         info = {}
-        info['name'] = sensors[readable_string]['name']
-        info['device'] = device
-        found_sensors[readable_string] = info
+        info['name'] = DS_SENSORS[readable]['name']
+        info['object_id'] = readable[-4:]
+        info['device_type'] = 'ds18b20'
+        info['interface'] = device
+        DS_SENSORS_FOUND[readable] = info
+        state_to_use = _get_ds_state_name(info['name'])
+        SENSOR_STATES_TO_USE[state_to_use] = info['object_id']
 
-print ("found 1-wire", found_sensors)
+print ("found 1-wire(s)", DS_SENSORS_FOUND)
 
 if True:
-    ds_sensor.convert_temp()
+    DS_SENSOR_IFC.convert_temp()
     time.sleep_ms(750)
 
     try:
-        for s_id, s_params in found_sensors.items():
-            device = s_params['device']
-            temperature = round(ds_sensor.read_temp(device), 1)
+        for s_id, s_params in DS_SENSORS_FOUND.items():
+            device = s_params['interface']
+            temperature = round(DS_SENSOR_IFC.read_temp(device), 1)
             print(s_id, temperature, "C")
     except OneWireError as error:
         print("error with", device)
@@ -94,6 +111,7 @@ if True:
         # FIXME: hopefully a transient issue but add better handling
         pass
 
+########################################################################
 # I2C configs
 i2c_bus_info = I2C_CONFIG['bus']
 i2c_bus = i2c_bus_info['bus_number']
@@ -103,10 +121,10 @@ i2c_scl = Pin(i2c_bus_info['scl_pin'])
 i2c = I2C(i2c_bus, sda=i2c_sda, scl=i2c_scl)
 
 # I2C sensors config - bme280
-I2C_SENSORS = []
-I2C_SENSORS_FOUND = False
-for sensor in I2C_CONFIG.get('sensors', []):
-    I2C_SENSORS_FOUND = True
+I2C_SENSORS = I2C_CONFIG.get('sensors', [])
+I2C_SENSORS_FOUND = {}
+
+for sensor in I2C_SENSORS:
     for s_type, s_params in sensor.items():
         if s_type == 'bme280':
             address = s_params.setdefault('address', 0x77)
@@ -116,20 +134,25 @@ for sensor in I2C_CONFIG.get('sensors', []):
             info = {}
             info['device_type'] = s_type
             info['address'] = address
+            info['object_id'] = 'amb'
             info['interface'] = this
-            I2C_SENSORS.append(info)
+            I2C_SENSORS_FOUND[address] = info
+            sensor_to_use = 'temperature_ambient'
+            SENSOR_STATES_TO_USE[sensor_to_use] = "ambT"
+            sensor_to_use = 'humidity_ambient'
+            SENSOR_STATES_TO_USE[sensor_to_use] = "ambH"
 
-if I2C_SENSORS_FOUND:
-    #print(I2C_SENSORS)
-    for i2c_sensor in I2C_SENSORS:
-        sensor_interface = i2c_sensor['interface']
-        name = i2c_sensor['device_type']
-        if name == 'bme280':
-            temperature = sensor_interface.temperature
-            humidity = sensor_interface.humidity
-            dewpoint = sensor_interface.dew_point
-            print(f"{name}:> {temperature:.1f}C rel humid:{humidity:.1f}% dewpt:{dewpoint:.1f}C")
 
+for i2c_address, s_params in I2C_SENSORS_FOUND.items():
+    sensor_interface = s_params['interface']
+    name = s_params['device_type']
+    if name == 'bme280':
+        temperature = sensor_interface.temperature
+        humidity = sensor_interface.humidity
+        dewpoint = sensor_interface.dew_point
+        print(f"{name}:> {temperature:.1f}C rel humid:{humidity:.1f}% dewpt:{dewpoint:.1f}C")
+
+########################################################################
 # I2C displays config
 I2C_DISPLAYS = []
 I2C_DISPLAYS_FOUND = False
@@ -155,6 +178,45 @@ if len(i2c_displays):
 
 print("displays found:", I2C_DISPLAYS)
 if I2C_DISPLAYS_FOUND:
-    time.sleep(7)
+    time.sleep(2)
     I2C_DISPLAYS[0]['interface'].fill(0)
     I2C_DISPLAYS[0]['interface'].show()
+
+
+print(SENSOR_STATES_TO_USE)
+
+def cvt_CtoF(temperature):
+    return (9. / 5.) * temperature + 32.0
+
+while True:
+    state_update = {}
+
+    DS_SENSOR_IFC.convert_temp()
+    time.sleep_ms(750)
+
+    try:
+        for s_id, s_params in DS_SENSORS_FOUND.items():
+            device = s_params['interface']
+            name = s_params['name']
+            state_name = _get_ds_state_name(name)
+            temperature = round(DS_SENSOR_IFC.read_temp(device), 1)
+            print(s_id, name, temperature, "C")
+            state_update[state_name] = cvt_CtoF(temperature)
+    except OneWireError as error:
+        print("error with", device)
+        print(error)
+        # FIXME: hopefully a transient issue but add better handling
+        pass
+
+    for i2c_address, s_params in I2C_SENSORS_FOUND.items():
+        sensor_interface = s_params['interface']
+        name = s_params['device_type']
+        if name == 'bme280':
+            temperature = round(sensor_interface.temperature, 1)
+            humidity = round(sensor_interface.humidity, 1)
+            print(f"{name}:> {temperature:.1f}C rel humid:{humidity:.1f}% dewpt:{dewpoint:.1f}C")
+            state_update['humidity_ambient'] = humidity
+            state_update['temperature_ambient'] = cvt_CtoF(temperature)
+
+    print("latest values", json.dumps(state_update))
+    time.sleep(5)
