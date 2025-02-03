@@ -1,6 +1,6 @@
 # micropython program to publish sensor data to MQTT for use by Home Assistant
 #
-#
+# See TODO.md
 
 # import errno
 import time
@@ -8,6 +8,7 @@ import network
 import binascii
 import json
 import sys
+from collections import OrderedDict
 
 import asyncio
 import ds18x20
@@ -45,26 +46,6 @@ UNIQ_ID_PRE = APP_CONFIG.setdefault("unique_id", f"{DEVNAME}_{udi}")
 print(DEVNAME, mac, udi, UNIQ_ID_PRE)
 set_mqtt_disc_dev_id(UNIQ_ID_PRE)
 print(CFG_DEV)
-
-# Wait for connect or fail
-max_wait = 12
-while max_wait > 0:
-
-    if wlan.status() < 0 or wlan.status() >= 3:
-        break
-    max_wait -= 1
-    print('waiting for connection...')
-    time.sleep(1)
-
-# Handle connection error
-if wlan.status() != 3:
-    raise RuntimeError('network connection failed')
-else:
-    print('connected')
-
-status = wlan.ifconfig()
-print('ip = ' + status[0])
-
 
 ########################################################################
 #  Detect devices from the config files
@@ -167,8 +148,10 @@ I2C_DISPLAYS = []
 I2C_DISPLAYS_FOUND = False
 i2c_displays = I2C_CONFIG.get('displays', [])
 
+I2C_USE_DISPLAYS = APP_CONFIG.get('display_temperature_readings', False)
+
 # assume zero or one (no more) display for now
-if len(i2c_displays):
+if len(i2c_displays) and I2C_USE_DISPLAYS:
     display_info = i2c_displays[0]
     #print(display_info)
     for d_type, d_params in display_info.items():
@@ -180,7 +163,8 @@ if len(i2c_displays):
         display.text(DEVNAME, 0, 0, 1)
         display.text(UNIQ_ID_PRE, 0, 12, 1)
         display.show()
-        info = {'device_type': d_type, 'interface': display }
+        info = {'device_type': d_type, 'interface': display,
+                'height': h, 'width': w}
         info.update(d_params)
         I2C_DISPLAYS_FOUND = True
         I2C_DISPLAYS.append(info)
@@ -192,10 +176,44 @@ if I2C_DISPLAYS_FOUND:
     I2C_DISPLAYS[0]['interface'].show()
 
 
+def _display_readings(values):
+    print(values)
+    display = I2C_DISPLAYS[0]['interface']
+    width = I2C_DISPLAYS[0]['width']
+    height = I2C_DISPLAYS[0]['height'] # use for height check?
+
+    line_height = 12
+    total_columns = 2
+    reading_width = width // total_columns
+
+    display.fill(0)
+    line_no = 0
+    column_no = 0
+    for short_name, value in values.items():
+        if short_name.startswith('bed'):
+            s = f"{short_name[-2:]} {value:.1f}F"
+        else:
+            s = f"{short_name}{value}"
+            if  short_name.startswith('amb') and column_no != 0:
+                # start new line
+                line_no = line_no + 1
+                column_no = 0
+
+        x = column_no * reading_width
+        y = line_no * line_height
+        print(y, x, s)
+        display.text(s, x, y, 1)
+        (line_no, column_no) = divmod (line_no * total_columns + column_no + 1,
+                                       total_columns)
+    display.show()
+
+########################################################################
+
+
 print(SENSOR_STATES_TO_USE)
 
 def cvt_CtoF(temperature):
-    return (9. / 5.) * temperature + 32.0
+    return round((9. / 5.) * temperature + 32.0, 1)
 
 async def messages(client):  # Respond to incoming messages
     # If MQTT V5is used this would read
@@ -210,15 +228,19 @@ async def up(client):  # Respond to connectivity being (re)established
         # await client.subscribe('foo_topic', 1)  # renew subscriptions
 
 async def main(client):
+    # Wi-Fi network starts here, using mqtt_as capability
     await client.connect()
     for coroutine in (up, messages):
         asyncio.create_task(coroutine(client))
+
     state_topic = await mqtt_discovery(client)
 
     n = 0
+    display_values = OrderedDict([])
     while True:
         n = n + 1
         state_update = {}
+        display_values['N'] = f"={n:>5,}"
 
         DS_SENSOR_IFC.convert_temp()
         time.sleep_ms(750)
@@ -230,7 +252,9 @@ async def main(client):
                 state_name = _get_ds_state_name(name)
                 temperature = round(DS_SENSOR_IFC.read_temp(device), 1)
                 # print(s_id, name, temperature, "C")
-                state_update[state_name] = cvt_CtoF(temperature)
+                tF = cvt_CtoF(temperature)
+                state_update[state_name] = tF
+                display_values[name] = tF
         except OneWireError as error:
             print("error with", device)
             print(error)
@@ -244,12 +268,18 @@ async def main(client):
                 temperature = round(sensor_interface.temperature, 1)
                 humidity = round(sensor_interface.humidity, 1)
                 # print(f"{name}:> {temperature:.1f}C rel humid:{humidity:.1f}% dewpt:{dewpoint:.1f}C")
+                tF = cvt_CtoF(temperature)
+                state_update['temperature_ambient'] = tF
                 state_update['humidity_ambient'] = humidity
-                state_update['temperature_ambient'] = cvt_CtoF(temperature)
+                display_value = f" {tF:.1f}F {humidity:.0f}%"
+                display_values['amb'] = display_value
+
 
         pub_payload = json.dumps(state_update)
         # print(state_topic, pub_payload)
         await client.publish(state_topic, bytes(pub_payload, 'utf-8'), qos=1)
+        if I2C_DISPLAYS_FOUND:
+            _display_readings(display_values)
         await asyncio.sleep(APP_CONFIG.get('sensor_read_interval_seconds', 30))
 
 
