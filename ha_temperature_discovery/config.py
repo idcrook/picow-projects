@@ -13,15 +13,17 @@ TOP_TOPIC= 'homeassistant'
 
 SWVER = "0.1"
 HWVER = "0.1"
-MDL = "Pico temp"
-MNF = "idcrook-labs"
-DEV = "seedomatic"
-NAME = f"{MNF} {MDL}"
+MDL   = "Pico temp"
+MDL_ID = "picow_ds_bme280"
+MNF    = "idcrook-labs"
+brand  = "seedomatic"
+NAME = f"{brand} {MDL}"
 
 CFG_DEV = {
     "sw": SWVER,
     "hw": HWVER,
     "mdl": MDL,
+    "mdl_id": MDL_ID,
     "mf": MNF,
     "name": NAME,
     "ids": [],

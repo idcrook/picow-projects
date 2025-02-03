@@ -198,6 +198,72 @@ payload no2
 ```
 
 
+homeassistant/sensor/picow0_940/061b/config
+
+```
+{
+  "unit_of_measurement": "°F",
+  "value_template": "{{ value_json.bed5_temperature | is_defined }}",
+  "name": "bed5_temp",
+  "device_class": "temperature",
+  "state_topic": "homeassistant/sensor/picow0_940/state",
+  "unique_id": "picow0_940_0746_bed5_temp",
+  "device": {
+    "mf": "idcrook-labs",
+    "name": "idcrook-labs Pico temp",
+    "hw": "0.1",
+    "sw": "0.1",
+    "mdl": "Pico temp",
+    "ids": [
+      "picow0_940"
+    ]
+  }
+}
+
+
+{
+  "val_tpl": "{{ value_json.humidity_ambient | is_defined }}",
+  "name": "amb_humid",
+  "stat_t": "homeassistant/sensor/picow0_940/state",
+  "uniq_id": "picow0_940-bme280-119-amb_humid",
+  "dev_cla": "humidity",
+  "unit_of_meas": "%",
+  "device": {
+    "ids": [
+      "picow0_940"
+    ]
+  }
+}
+
+```
+
+
+```
+
+
+{
+  "unit_of_measurement": "°F",
+  "value_template": "{{ value_json.bed5_temperature | is_defined }}",
+  "name": "bed5_temp",
+  "device_class": "temperature",
+  "state_topic": "homeassistant/sensor/picow0_940/state",
+  "unique_id": "picow0_940_0746_bed5_temp",
+  "device": {
+    "mf": "idcrook-labs",
+    "name": "idcrook-labs Pico temp",
+    "hw": "0.1",
+    "sw": "0.1",
+    "mdl": "Pico temp",
+    "ids": [
+      "picow0_940"
+    ]
+  }
+}
+
+{"unit_of_measurement": "°F", "value_template": "{{ value_json.bed4_temperature | is_defined }}", "name": "bed4_temp", "device_class": "temperature", "state_topic": "homeassistant/sensor/picow0_940/state", "unique_id": "picow0_940_061b_bed4_temp", "device": {"identifiers": ["picow0_940"]}}
+
+{"unit_of_meas": "°F", "val_tpl": "{{ value_json.bed4_temperature | is_defined }}", "name": "bed4_temp", "dev_cla": "temperature", "stat_t": "homeassistant/sensor/picow0_940/state", "uniq_id": "picow0_940-061b-bed4_temp", "ids": ["picow0_940"]
+```
 
 
 smart button

@@ -1,4 +1,8 @@
-import errno
+# micropython program to publish sensor data to MQTT for use by Home Assistant
+#
+#
+
+# import errno
 import time
 import network
 import binascii
@@ -21,7 +25,7 @@ from micropython_bmpxxx import bmpxxx
 import config
 from config import ONEWIRE_CONFIG, I2C_CONFIG, APP_CONFIG
 from config import unique_device_identifier, set_mqtt_disc_dev_id, CFG_DEV
-from secrets import WIFI_SSID, WIFI_PASSWORD, MQTT_SERVER, MQTT_PORT, MQTT_USER, MQTT_PASSWORD
+from secrets import WIFI_SSID, WIFI_PASSWORD, MQTT_SERVER #, MQTT_PORT, MQTT_USER, MQTT_PASSWORD
 
 ssid = WIFI_SSID
 password = WIFI_PASSWORD
@@ -209,10 +213,11 @@ async def main(client):
     await client.connect()
     for coroutine in (up, messages):
         asyncio.create_task(coroutine(client))
-    n = 0
     state_topic = await mqtt_discovery(client)
 
+    n = 0
     while True:
+        n = n + 1
         state_update = {}
 
         DS_SENSOR_IFC.convert_temp()
@@ -244,7 +249,7 @@ async def main(client):
 
         pub_payload = json.dumps(state_update)
         # print(state_topic, pub_payload)
-        await client.publish(state_topic, pub_payload, qos=1)
+        await client.publish(state_topic, bytes(pub_payload, 'utf-8'), qos=1)
         await asyncio.sleep(APP_CONFIG.get('sensor_read_interval_seconds', 30))
 
 
@@ -259,21 +264,24 @@ async def mqtt_discovery(client):
         state_name = _get_ds_state_name(name)
         topic = TOP_TOPIC + f"/sensor/{UNIQ_ID_PRE}/{readable}/config"
         payload = {
-            "stat_t": state_topic,
             "name": f"{name}_temp",
-            "uniq_id": f"{UNIQ_ID_PRE}-{readable}-{name}_temp",
-            "dev_cla": "temperature",
-            "val_tpl": f"{{{{ value_json.{state_name} | is_defined }}}}",
-            "unit_of_meas": "°F",
+            # "state_class": "measurement",
+            "device_class": "temperature",
+            "state_topic": state_topic,
+            "unit_of_measurement": "°F",
+            "value_template": f"{{{{ value_json.{state_name} | is_defined }}}}",
+            "unique_id": f"{UNIQ_ID_PRE}_{readable}_{name}_temp",
+            "device" : CFG_DEV,
         }
         if first_ds:
             first_ds = False
-            payload.update(CFG_DEV)
         else:
-            payload['ids'] = CFG_DEV['ids']
+            payload['device'] = {}
+            payload['device']['ids'] = CFG_DEV['ids']
 
-        #print(topic, json.dumps(payload))
-        await client.publish(topic, json.dumps(payload), qos=1)
+        message = json.dumps(payload)
+        #print(topic, message)
+        await client.publish(topic, bytes(message, 'utf-8'), qos=1)
 
     for i2c_address, s_params in I2C_SENSORS_FOUND.items():
         name = s_params['device_type']
@@ -283,28 +291,30 @@ async def mqtt_discovery(client):
         payloadT = {
             "stat_t": state_topic,
             "name": "amb_temp",
-            "uniq_id": f"{UNIQ_ID_PRE}-{name}-{address}-amb_temp",
+            "uniq_id": f"{UNIQ_ID_PRE}_{name}_{address}_amb_temp",
             "dev_cla": "temperature",
             "val_tpl": f"{{{{ value_json.{valueT} | is_defined }}}}",
             "unit_of_meas": "°F",
+            "device" : {  "ids":  CFG_DEV['ids']  },
         }
-        payloadT['ids'] = CFG_DEV['ids']
-        #print(topicT, json.dumps(payloadT))
-        await client.publish(topicT, json.dumps(payloadT), qos=1)
+        messageT = json.dumps(payloadT)
+        #print(topicT, messageT)
+        await client.publish(topicT, bytes(messageT, 'utf-8'), qos=1)
 
         valueH = 'humidity_ambient'
         topicH = TOP_TOPIC + f"/sensor/{UNIQ_ID_PRE}/ambH/config"
         payloadH = {
             "stat_t": state_topic,
             "name": "amb_humid",
-            "uniq_id": f"{UNIQ_ID_PRE}-{name}-{address}-amb_humid",
+            "uniq_id": f"{UNIQ_ID_PRE}_{name}_{address}_amb_humid",
             "dev_cla": "humidity",
             "val_tpl": f"{{{{ value_json.{valueH} | is_defined }}}}",
             "unit_of_meas": "%",
+            "device" : {  "ids":  CFG_DEV['ids']  },
         }
-        payloadT['ids'] = CFG_DEV['ids']
-        #print(topicH, json.dumps(payloadH))
-        await client.publish(topicH, json.dumps(payloadH), qos=1)
+        messageH = json.dumps(payloadH)
+        #print(topicH, messageH)
+        await client.publish(topicH, bytes(messageH, 'utf-8'), qos=1)
 
 
     return state_topic
