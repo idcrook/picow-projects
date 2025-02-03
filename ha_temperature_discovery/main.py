@@ -31,6 +31,8 @@ from secrets import WIFI_SSID, WIFI_PASSWORD, MQTT_SERVER #, MQTT_PORT, MQTT_USE
 ssid = WIFI_SSID
 password = WIFI_PASSWORD
 DEVNAME = APP_CONFIG.setdefault("device_name", "picow999")
+ONBOARD_LED = APP_CONFIG.setdefault("blink_onboard_led", False)
+LED_PIN = Pin('LED', Pin.OUT)
 
 # https://docs.micropython.org/en/latest/library/network.html#network.hostname
 network.hostname(DEVNAME)
@@ -67,7 +69,6 @@ DS_SENSOR_IFC = ds18x20.DS18X20(onewire.OneWire(ds_pin))
 
 DS_SENSORS = ONEWIRE_CONFIG.get("sensors", {})
 DS_SENSORS_FOUND = {}
-
 
 roms = DS_SENSOR_IFC.scan()
 for device in roms:
@@ -175,9 +176,31 @@ if I2C_DISPLAYS_FOUND:
     I2C_DISPLAYS[0]['interface'].fill(0)
     I2C_DISPLAYS[0]['interface'].show()
 
+# require at least one DS probe sensor to have been found
+if not DS_SENSORS_FOUND:
+    print("ERROR: No 1-wire sensors found.")
+    print(f"Looked for {list(DS_SENSORS.keys())}")
+    if I2C_DISPLAYS_FOUND:
+        I2C_DISPLAYS[0]['interface'].fill(0)
+        I2C_DISPLAYS[0]['interface'].text("ERROR ERROR", 0, 0, 1)
+        I2C_DISPLAYS[0]['interface'].text("No 1-W DS sensor", 0, 12, 1)
+        I2C_DISPLAYS[0]['interface'].show()
+
+    if ONBOARD_LED:
+        for i in range(15):
+            LED_PIN(True)
+            time.sleep_ms(150)
+            LED_PIN(False)
+            time.sleep_ms(850)
+    # FIXME: put something better here
+    sys.exit(1)
+
+
+### End accessory detection
 
 def _display_readings(values):
-    print(values)
+    """Show readings on connected display."""
+    #print(values)
     display = I2C_DISPLAYS[0]['interface']
     width = I2C_DISPLAYS[0]['width']
     height = I2C_DISPLAYS[0]['height'] # use for height check?
@@ -201,7 +224,7 @@ def _display_readings(values):
 
         x = column_no * reading_width
         y = line_no * line_height
-        print(y, x, s)
+        #print(f"{y:2d} {x:3d}|{s}")
         display.text(s, x, y, 1)
         (line_no, column_no) = divmod (line_no * total_columns + column_no + 1,
                                        total_columns)
@@ -240,10 +263,12 @@ async def main(client):
     while True:
         n = n + 1
         state_update = {}
-        display_values['N'] = f"={n:>5,}"
+        display_values['N'] = f"={n:>5}"
 
+        if ONBOARD_LED: LED_PIN.value(True)
         DS_SENSOR_IFC.convert_temp()
         time.sleep_ms(750)
+        if ONBOARD_LED: LED_PIN.value(False)
 
         try:
             for s_id, s_params in DS_SENSORS_FOUND.items():
@@ -280,6 +305,8 @@ async def main(client):
         await client.publish(state_topic, bytes(pub_payload, 'utf-8'), qos=1)
         if I2C_DISPLAYS_FOUND:
             _display_readings(display_values)
+        else:
+            print(list(display_values.items()))
         await asyncio.sleep(APP_CONFIG.get('sensor_read_interval_seconds', 30))
 
 
