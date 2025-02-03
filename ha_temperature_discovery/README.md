@@ -32,6 +32,25 @@ Use Ctrl-] or Ctrl-x to exit this shell
 like `pip` for micropython
 
 ```shell
+# set up for your wi-fi, and then copy over
 mpremote fs cp secrets.py :
 mpremote run mip_install.py
 ```
+
+
+## Putting on Pico
+
+
+```shell
+# customize these before copying
+mpremote fs cp secrets.py :
+mpremote fs cp config.py :
+mpremote fs cp device.py :
+
+# testing
+mpremote run test_ds18b20.py
+mpremote run main.py
+```
+
+
+To have it launch on "boot up", copy `main.py` to Pico W storage. `micropython` will run it after reset.
