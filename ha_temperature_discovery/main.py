@@ -238,6 +238,9 @@ print(SENSOR_STATES_TO_USE)
 def cvt_CtoF(temperature):
     return round((9. / 5.) * temperature + 32.0, 1)
 
+def _json_dumps(s):
+    return bytes(json.dumps(s, separators=(',', ':')), 'utf-8')
+
 async def messages(client):  # Respond to incoming messages
     # If MQTT V5is used this would read
     # async for topic, msg, retained, properties in client.queue:
@@ -300,9 +303,9 @@ async def main(client):
                 display_values['amb'] = display_value
 
 
-        pub_payload = json.dumps(state_update)
-        # print(state_topic, pub_payload)
-        await client.publish(state_topic, bytes(pub_payload, 'utf-8'), qos=1)
+        pub_payload = _json_dumps(state_update)
+        #print(n, state_topic, pub_payload)
+        await client.publish(state_topic, pub_payload, qos=1)
         if I2C_DISPLAYS_FOUND:
             _display_readings(display_values)
         else:
@@ -335,9 +338,9 @@ async def mqtt_discovery(client):
             payload['device'] = {}
             payload['device']['ids'] = CFG_DEV['ids']
 
-        message = json.dumps(payload)
+        message = _json_dumps(payload)
         #print(topic, message)
-        await client.publish(topic, bytes(message, 'utf-8'), qos=1)
+        await client.publish(topic, message, qos=1)
 
     for i2c_address, s_params in I2C_SENSORS_FOUND.items():
         name = s_params['device_type']
@@ -353,9 +356,9 @@ async def mqtt_discovery(client):
             "unit_of_meas": "°F",
             "device" : {  "ids":  CFG_DEV['ids']  },
         }
-        messageT = json.dumps(payloadT)
+        messageT = _json_dumps(payloadT)
         #print(topicT, messageT)
-        await client.publish(topicT, bytes(messageT, 'utf-8'), qos=1)
+        await client.publish(topicT, messageT, qos=1)
 
         valueH = 'humidity_ambient'
         topicH = TOP_TOPIC + f"/sensor/{UNIQ_ID_PRE}/ambH/config"
@@ -368,9 +371,9 @@ async def mqtt_discovery(client):
             "unit_of_meas": "%",
             "device" : {  "ids":  CFG_DEV['ids']  },
         }
-        messageH = json.dumps(payloadH)
+        messageH = _json_dumps(payloadH)
         #print(topicH, messageH)
-        await client.publish(topicH, bytes(messageH, 'utf-8'), qos=1)
+        await client.publish(topicH, messageH, qos=1)
 
 
     return state_topic
