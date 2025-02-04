@@ -241,22 +241,6 @@ def cvt_CtoF(temperature):
 def _json_dumps(s):
     return bytes(json.dumps(s, separators=(',', ':')), 'utf-8')
 
-async def feed_wdt():
-    # On rp2040 devices, the maximum timeout is 8388 ms.
-    if use_watchdog := APP_CONFIG.get("enable_watchdog", False):
-        print("using HARDWARE watchdog timer")
-        wdt = WDT(timeout=8300)
-    else:
-        print("using DUMMY watchdog timer")
-        wdt = type('WDT', (object,), { "feed": lambda *self: None })
-        # print("wdt", end=" ")
-
-    n = 0
-    while True:
-        await asyncio.sleep_ms(2000)
-        # n = n + 1; print(f"{n}", end=" ")
-        wdt.feed()
-
 async def messages(client):  # Respond to incoming messages
     # If MQTT V5is used this would read
     # async for topic, msg, retained, properties in client.queue:
@@ -268,6 +252,18 @@ async def up(client):  # Respond to connectivity being (re)established
         await client.up.wait()  # Wait on an Event
         client.up.clear()
         # await client.subscribe('foo_topic', 1)  # renew subscriptions
+
+
+async def sleep_for(n: int, wdt):
+    """Sleep for N seconds, but also feed watchdog."""
+    # TODO: add "heartbeat"  LED here too?
+    i = 1
+    while i <= n:
+        # should be fine as long as this is
+        await asyncio.sleep_ms(1000)
+        #print("t", end="")
+        wdt.feed()
+        i = i + 1
 
 async def main(client):
     # Wi-Fi network starts here, using mqtt_as capability
@@ -281,23 +277,34 @@ async def main(client):
     for coroutine in (up, messages):
         asyncio.create_task(coroutine(client))
 
-    # may need a Global exception handler to shutoff WDT feeding?
-    # https://github.com/peterhinch/micropython-async/blob/master/v3/docs/TUTORIAL.md#511-global-exception-handler
-    asyncio.create_task(feed_wdt())
+    # Start Watchdog Timer (WDT)
+    if use_hardware_watchdog := APP_CONFIG.get("enable_watchdog", False):
+        print("using HARDWARE watchdog timer")
+        # On rp2040 devices, the maximum timeout is 8388 ms.
+        wdt = WDT(timeout=8300)
+    else:
+        print("using DUMMY watchdog timer")
+        wdt = type('WDT', (object,), { "feed": lambda *self: None })
+        # print("wdt", end=" ")
 
     state_topic = await mqtt_discovery(client)
 
     n = 0
     display_values = OrderedDict([])
+    read_interval = APP_CONFIG.get('sensor_read_interval_seconds', 30)
     while True:
         n = n + 1
         state_update = {}
         display_values['N'] = f"={n:>5}"
 
         if ONBOARD_LED: LED_PIN.value(True)
+        wdt.feed()
+
         DS_SENSOR_IFC.convert_temp()
         time.sleep_ms(750)
+
         if ONBOARD_LED: LED_PIN.value(False)
+        wdt.feed()
 
         try:
             for s_id, s_params in DS_SENSORS_FOUND.items():
@@ -336,7 +343,11 @@ async def main(client):
             _display_readings(display_values)
         else:
             print(list(display_values.items()))
-        await asyncio.sleep(APP_CONFIG.get('sensor_read_interval_seconds', 30))
+
+        if use_hardware_watchdog:
+            await sleep_for(read_interval, wdt)
+        else:
+            await asyncio.sleep(read_interval)
 
 
 async def mqtt_discovery(client):
