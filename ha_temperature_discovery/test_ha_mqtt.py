@@ -9,7 +9,7 @@ import json
 import sys
 
 import asyncio
-from machine import Pin, I2C
+from machine import Pin
 
 # Third party libraries
 sys.path.append("/third-party")
@@ -110,6 +110,7 @@ async def main(client):
     # }
 
     while True:
+        n = n + 1
         ds_sensor.convert_temp()
         await asyncio.sleep_ms(750) # required by hardware!
 
@@ -128,7 +129,7 @@ async def main(client):
         pub_payload = {
             "bed1_temperature": f"{last_read_temperature_F:.1f}"
         }
-        print(state_topic, pub_payload)
+        print(n, state_topic, pub_payload)
         await client.publish(state_topic, json.dumps(pub_payload), qos=1)
 
         await asyncio.sleep(5)

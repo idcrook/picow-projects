@@ -1,20 +1,34 @@
 # mpremote run test_bme.py
-import errno
 import time
-import network
-
-import json
 import sys
 
 # from secrets import WIFI_SSID, WIFI_PASSWORD, MQTT_SERVER, MQTT_PORT, MQTT_USER, MQTT_PASSWORD
-from secrets import WIFI_SSID, WIFI_PASSWORD
 sys.path.append("/third-party")
 
 from machine import Pin, I2C
 from micropython_bmpxxx import bmpxxx
 
-i2c = I2C(0, sda=Pin(4), scl=Pin(5))
-bme = bmpxxx.BME280(i2c, address=0x77)
+import config
+from config import I2C_CONFIG
+
+i2c_bus_info = I2C_CONFIG['bus']
+i2c_bus = i2c_bus_info['bus_number']
+i2c_sda = Pin(i2c_bus_info['sda_pin'])
+i2c_scl = Pin(i2c_bus_info['scl_pin'])
+
+# I2C sensors config - bme280
+
+I2C_SENSORS = I2C_CONFIG.get('sensors', [])
+I2C_SENSORS_FOUND = {}
+bme_address = 0x77
+
+for sensor in I2C_SENSORS:
+    for s_type, s_params in sensor.items():
+        if s_type == 'bme280':
+            bme_address = s_params.setdefault('address', 0x77)
+
+i2c = I2C(i2c_bus, sda=i2c_sda, scl=i2c_scl)
+bme = bmpxxx.BME280(i2c, address=bme_address)
 
 # https://forecast.weather.gov/data/obhistory/KFNL.html  1020.1
 sea_level_pressure = bme.sea_level_pressure

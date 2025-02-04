@@ -322,7 +322,6 @@ async def mqtt_discovery(client):
         topic = TOP_TOPIC + f"/sensor/{UNIQ_ID_PRE}/{readable}/config"
         payload = {
             "name": f"{name}_temp",
-            # "state_class": "measurement",
             "device_class": "temperature",
             "state_topic": state_topic,
             "unit_of_measurement": "°F",

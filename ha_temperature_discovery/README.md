@@ -44,8 +44,8 @@ mpremote run mip_install.py
 ```shell
 # customize these before copying
 mpremote fs cp secrets.py :
-mpremote fs cp config.py :
-mpremote fs cp device.py :
+mpremote fs cp config-picow1.py :config.py
+mpremote fs cp device-picow1.py :device.py
 
 # testing
 mpremote run test_ds18b20.py

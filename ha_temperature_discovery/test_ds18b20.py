@@ -2,10 +2,16 @@ from machine import Pin
 from time import sleep, sleep_ms
 import binascii
 import onewire
+from onewire import OneWireError
 import ds18x20
 
+import config
+from config import ONEWIRE_CONFIG
+
 # https://picow.pinout.xyz/ "GP22" -> row 12 on breadboard
-ONEWIRE_DATA_PIN = 22
+# https://picow.pinout.xyz/ "GP26" -> row 10 on breadboard
+# 1-wire configs
+ONEWIRE_DATA_PIN = Pin(ONEWIRE_CONFIG.get("data_pin", 22))
 
 ds_pin = Pin(ONEWIRE_DATA_PIN)
 
