@@ -15,7 +15,7 @@ import ds18x20
 import onewire
 from onewire import OneWireError
 from ssd1306 import SSD1306_I2C
-from machine import Pin, I2C
+from machine import Pin, I2C, WDT
 
 # Third party libraries
 sys.path.append("/third-party")
@@ -241,6 +241,22 @@ def cvt_CtoF(temperature):
 def _json_dumps(s):
     return bytes(json.dumps(s, separators=(',', ':')), 'utf-8')
 
+async def feed_wdt():
+    # On rp2040 devices, the maximum timeout is 8388 ms.
+    if use_watchdog := APP_CONFIG.get("enable_watchdog", False):
+        print("using HARDWARE watchdog timer")
+        wdt = WDT(timeout=8300)
+    else:
+        print("using DUMMY watchdog timer")
+        wdt = type('WDT', (object,), { "feed": lambda *self: None })
+        # print("wdt", end=" ")
+
+    n = 0
+    while True:
+        await asyncio.sleep_ms(2000)
+        # n = n + 1; print(f"{n}", end=" ")
+        wdt.feed()
+
 async def messages(client):  # Respond to incoming messages
     # If MQTT V5is used this would read
     # async for topic, msg, retained, properties in client.queue:
@@ -255,9 +271,19 @@ async def up(client):  # Respond to connectivity being (re)established
 
 async def main(client):
     # Wi-Fi network starts here, using mqtt_as capability
-    await client.connect()
+    try:
+        await client.connect()
+    except Exception as e:
+        raise
+        # FIXME: handle connection timeout, etc, here
+        # OSError: Wi-Fi connect timed out
+
     for coroutine in (up, messages):
         asyncio.create_task(coroutine(client))
+
+    # may need a Global exception handler to shutoff WDT feeding?
+    # https://github.com/peterhinch/micropython-async/blob/master/v3/docs/TUTORIAL.md#511-global-exception-handler
+    asyncio.create_task(feed_wdt())
 
     state_topic = await mqtt_discovery(client)
 
@@ -384,12 +410,17 @@ mqtt_config['ssid'] = WIFI_SSID
 mqtt_config['wifi_pw'] = WIFI_PASSWORD
 mqtt_config['server'] = MQTT_SERVER
 mqtt_config["queue_len"] = 1  # Use event interface with default queue size
-MQTTClient.DEBUG = True  # Optional: print diagnostic messages
+
+if mqtt_client_debug := APP_CONFIG.get("mqtt_client_debug", True):
+    print("enabling mqtt client DEBUG messages")
+    MQTTClient.DEBUG = True  # Optional: print diagnostic messages
+else:
+    MQTTClient.DEBUG = False
+
 client = MQTTClient(mqtt_config)
 
 # on macOS: brew install mosquitto
 print(f"mosquitto_sub -h {MQTT_SERVER} -t {TOP_TOPIC}/sensor/{UNIQ_ID_PRE}/\\#")
-
 
 try:
     asyncio.run(main(client))
