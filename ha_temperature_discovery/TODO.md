@@ -1,10 +1,10 @@
 
-# Some TODOs
+# TODO
 
- - add (optional) "heartbeat" LED using onboard LED
  - add availability to discovery config
 
-# Done
+# DONE
 
  - add (optional) display local monitoring
  - add Watch Dog timer (WDT)
+ - add (optional) "heartbeat" LED using onboard LED

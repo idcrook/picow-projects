@@ -254,20 +254,35 @@ async def up(client):  # Respond to connectivity being (re)established
         # await client.subscribe('foo_topic', 1)  # renew subscriptions
 
 
-async def sleep_for(n: int, wdt):
-    """Sleep for N seconds, but also feed watchdog."""
-    # TODO: add "heartbeat"  LED here too?
-    i = 1
+async def sleep_for_ms(n: int, wdt):
+    """Sleep for N milliseconds, but also feed watchdog."""
+    i = 1000
+    do_heartbeat = False
+    if ONBOARD_LED and APP_CONFIG.get("heartbeat_onboard_led", True):
+        do_heartbeat = True
+        duty_cycle = 5
+        granularity = 500
+    # FIXME: accurately handle the tail case where n is not multiple of 1000
     while i <= n:
-        # should be fine as long as this is
-        await asyncio.sleep_ms(1000)
+        # should be fine as long as this loop duration (1000 ms) is much less than WDT
+        if do_heartbeat:
+            for x in range(1000 // granularity):
+                LED_PIN.value(True)
+                await asyncio.sleep_ms(duty_cycle)
+                LED_PIN.value(False)
+                await asyncio.sleep_ms(granularity - duty_cycle)
+        else:
+            await asyncio.sleep_ms(1000)
         #print("t", end="")
+
+
         wdt.feed()
-        i = i + 1
+        i = i + 1000
 
 async def main(client):
     # Wi-Fi network starts here, using mqtt_as capability
     try:
+        print("mqtt_as Connecting...")
         await client.connect()
     except Exception as e:
         raise
@@ -278,7 +293,7 @@ async def main(client):
         asyncio.create_task(coroutine(client))
 
     # Start Watchdog Timer (WDT)
-    if use_hardware_watchdog := APP_CONFIG.get("enable_watchdog", False):
+    if use_hardware_watchdog := APP_CONFIG.get("enable_hardware_watchdog", False):
         print("using HARDWARE watchdog timer")
         # On rp2040 devices, the maximum timeout is 8388 ms.
         wdt = WDT(timeout=8300)
@@ -291,7 +306,7 @@ async def main(client):
 
     n = 0
     display_values = OrderedDict([])
-    read_interval = APP_CONFIG.get('sensor_read_interval_seconds', 30)
+    sleep_interval_ms = int(APP_CONFIG.get('sensor_read_interval_seconds', 30) * 1000) - 750
     while True:
         n = n + 1
         state_update = {}
@@ -301,7 +316,7 @@ async def main(client):
         wdt.feed()
 
         DS_SENSOR_IFC.convert_temp()
-        time.sleep_ms(750)
+        time.sleep_ms(750) # required for DS sensors
 
         if ONBOARD_LED: LED_PIN.value(False)
         wdt.feed()
@@ -345,9 +360,9 @@ async def main(client):
             print(list(display_values.items()))
 
         if use_hardware_watchdog:
-            await sleep_for(read_interval, wdt)
+            await sleep_for_ms(sleep_interval_ms, wdt)
         else:
-            await asyncio.sleep(read_interval)
+            await asyncio.sleep_ms(sleep_interval_ms)
 
 
 async def mqtt_discovery(client):

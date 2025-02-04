@@ -39,7 +39,8 @@ APP_CONFIG = {
     "sensor_read_interval_seconds": 30,
     "mqtt_client_debug": False,
     "blink_onboard_led": True,
-    "enable_watchdog": True,
+    "heartbeat_onboard_led": True,
+    "enable_hardware_watchdog": True,
     "device_name": "picow0",
     "display_temperature_readings": True,
     # "unique_id"
