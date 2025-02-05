@@ -176,13 +176,14 @@ if len(i2c_displays) and I2C_USE_DISPLAYS:
         address = d_params['address']
         h = d_params['height']
         w = d_params['width']
+        skip_down_pixels = d_params['second_line_padding']
         display = SSD1306_I2C(w, h, i2c)
         display.fill(0)
         display.text(DEVNAME, 0, 0, 1)
-        display.text(UNIQ_ID_PRE, 0, 12, 1)
+        display.text(UNIQ_ID_PRE, 0, 12 + skip_down_pixels, 1)
         display.show()
         info = {'device_type': d_type, 'interface': display,
-                'height': h, 'width': w}
+                'height': h, 'width': w, 'pad_after_first_line': skip_down_pixels}
         info.update(d_params)
         I2C_DISPLAYS_FOUND = True
         I2C_DISPLAYS.append(info)
@@ -223,8 +224,9 @@ def _display_readings(values):
     display = I2C_DISPLAYS[0]['interface']
     width = I2C_DISPLAYS[0]['width']
     height = I2C_DISPLAYS[0]['height'] # use for height check?
+    second_line_padding = I2C_DISPLAYS[0]['pad_after_first_line']
 
-    line_height = 12
+    line_height = 12     # TODO: Make this configuratble?
     total_columns = 2
     reading_width = width // total_columns
 
@@ -244,7 +246,8 @@ def _display_readings(values):
         x = column_no * reading_width
         y = line_no * line_height
         #print(f"{y:2d} {x:3d}|{s}")
-        display.text(s, x, y, 1)
+        ypadding = second_line_padding if line_no == 1 else 0
+        display.text(s, x, y+ypadding, 1)
         (line_no, column_no) = divmod (line_no * total_columns + column_no + 1,
                                        total_columns)
     display.show()
