@@ -1,19 +1,26 @@
 # Home Assistant Temperature Sensor
 
-Uses MQTT Discovery protocol.
+Micropython Home Assistant sensor driver
 
-# Requirements
+## Features
+
+ - Uses micropython and `asyncio`/`mqtt_as` for reliability and performance.
+ - Can handle network downtimes and flakiness
+   - Has hardware watchdog timer (WDT) support
+ - Integrates into local `MQTT` and supports MQTT Discovery for sensors in Home Assistant
+
+## Requirements
 
  - Pico W microcontroller board, connecting to WiFi.
    - Up to three DS18B20 1-wire temperature probes connected
    - (Optional) OLED matrix (using I2C) for displaying info
-   - (Optional) BMP* sensor (using I2C) for ambient condiditions
+   - (Optional) BM[EP] sensor (using I2C) for ambient condiditions
  - Home Assistant with MQTT integration
 
 
-## micropython target setup
+### micropython target setup
 
-Assumes `mpremote` is installed in macOS (host) and recent version of micropython (target).
+Assumes  [`mpremote`](https://docs.micropython.org/en/latest/reference/mpremote.html) is installed in macOS (host) and recent version of micropython (target).
 
 I use macOS or Linux, and am targetting Raspberry Pi Pico W.
 
@@ -38,7 +45,7 @@ mpremote run mip_install.py
 ```
 
 
-## Putting on Pico
+## Putting on Pico W
 
 
 ```shell
