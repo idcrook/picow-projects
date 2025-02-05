@@ -15,6 +15,7 @@ import ds18x20
 import onewire
 from onewire import OneWireError
 from ssd1306 import SSD1306_I2C
+import machine
 from machine import Pin, I2C, WDT
 
 # Third party libraries
@@ -33,6 +34,22 @@ password = WIFI_PASSWORD
 DEVNAME = APP_CONFIG.setdefault("device_name", "picow999")
 ONBOARD_LED = APP_CONFIG.setdefault("blink_onboard_led", False)
 LED_PIN = Pin('LED', Pin.OUT)
+
+# https://docs.micropython.org/en/latest/library/machine.html#machine.reset_cause
+# https://docs.micropython.org/en/latest/library/machine.html#machine-constants
+reset_cause = machine.reset_cause()
+if reset_cause == machine.PWRON_RESET:
+    print("Starting from PWRON_RESET")
+# elif reset_cause == machine.HARD_RESET:
+#     print("Starting from HARD_RESET (system initiated)")
+elif reset_cause == machine.WDT_RESET:
+    print("Starting from WDT_RESET (Watchdog Timer)")
+# elif reset_cause == machine.SOFT_RESET:
+#     print("Starting from micropython Soft Reset")
+# elif reset_cause == machine.DEEPSLEEP_RESET:
+#     print("Starting from Deep Sleep event")
+else:
+    print(f"Starting from unknown reset type: {reset_cause}")
 
 # https://docs.micropython.org/en/latest/library/network.html#network.hostname
 network.hostname(DEVNAME)
@@ -173,8 +190,10 @@ if len(i2c_displays) and I2C_USE_DISPLAYS:
 print("displays found:", I2C_DISPLAYS)
 if I2C_DISPLAYS_FOUND:
     time.sleep(2)
-    I2C_DISPLAYS[0]['interface'].fill(0)
-    I2C_DISPLAYS[0]['interface'].show()
+    # do not clear - to aid in reset debugging
+    if False:
+        I2C_DISPLAYS[0]['interface'].fill(0)
+        I2C_DISPLAYS[0]['interface'].show()
 
 # require at least one DS probe sensor to have been found
 if not DS_SENSORS_FOUND:
@@ -281,13 +300,27 @@ async def sleep_for_ms(n: int, wdt):
 
 async def main(client):
     # Wi-Fi network starts here, using mqtt_as capability
-    try:
-        print("mqtt_as Connecting...")
-        await client.connect()
-    except Exception as e:
-        raise
-        # FIXME: handle connection timeout, etc, here
+    connect_attempts = 0
+    MAX_ATTEMPTS = 10
+    while connect_attempts < MAX_ATTEMPTS:
+        try:
+            connect_attempts = connect_attempts + 1
+            print(f"connection attempt {connect_attempts}")
+            if connect_attempts == 1:
+                await client.connect(quick=True)
+            else:
+                await client.connect()
+            break
         # OSError: Wi-Fi connect timed out
+        except OSError as eos:
+            print(f"OSError on connect attempt {connect_attempts}")
+            await asyncio.sleep(2)
+        except Exception as e:
+            raise
+            # FIXME: add any other proper error handling here
+
+    if connect_attempts == MAX_ATTEMPTS:
+        machine.reset()
 
     for coroutine in (up, messages):
         asyncio.create_task(coroutine(client))
