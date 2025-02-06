@@ -289,8 +289,6 @@ async def up(client):  # Respond to connectivity being (re)established
         # await client.subscribe('foo_topic', 1)  # renew subscriptions
         await client.subscribe(ha_status_topic, 1)
 
-
-
 async def sleep_for_ms(n: int, wdt):
     """Sleep for N milliseconds, but also feed watchdog."""
     i = 1000
@@ -303,18 +301,25 @@ async def sleep_for_ms(n: int, wdt):
     while i <= n:
         # should be fine as long as this loop duration (1000 ms) is much less than WDT
         if do_heartbeat:
-            for x in range(1000 // granularity):
+            for x in range(i // granularity):
                 LED_PIN.value(True)
                 await asyncio.sleep_ms(duty_cycle)
                 LED_PIN.value(False)
                 await asyncio.sleep_ms(granularity - duty_cycle)
         else:
-            await asyncio.sleep_ms(1000)
+            await asyncio.sleep_ms(i)
         #print("t", end="")
 
-
         wdt.feed()
-        i = i + 1000
+        # handle a non-integer of seconds
+        if n < i:
+            break
+        else:
+            n = n - i
+
+    await asyncio.sleep_ms(n)
+    # shouldn't hurt :)
+    wdt.feed()
 
 async def main(client):
     # Wi-Fi network starts here, using mqtt_as capability
@@ -357,7 +362,8 @@ async def main(client):
 
     n = 0
     display_values = OrderedDict([])
-    sleep_interval_ms = int(APP_CONFIG.get('sensor_read_interval_seconds', 30) * 1000) - 750
+    DS_WAIT_MS = 750
+    sleep_duration_ms = int(APP_CONFIG.get('sensor_read_interval_seconds', 30) * 1000) - DS_WAIT_MS
     while True:
         n = n + 1
         state_update = {}
@@ -367,7 +373,7 @@ async def main(client):
         wdt.feed()
 
         DS_SENSOR_IFC.convert_temp()
-        time.sleep_ms(750) # required for DS sensors
+        time.sleep_ms(DS_WAIT_MS) # required for DS sensors
 
         if ONBOARD_LED: LED_PIN.value(False)
         wdt.feed()
@@ -411,9 +417,9 @@ async def main(client):
             print(list(display_values.items()))
 
         if use_hardware_watchdog:
-            await sleep_for_ms(sleep_interval_ms, wdt)
+            await sleep_for_ms(sleep_duration_ms, wdt)
         else:
-            await asyncio.sleep_ms(sleep_interval_ms)
+            await asyncio.sleep_ms(sleep_duration_ms)
 
 
 async def mqtt_discovery(client):
