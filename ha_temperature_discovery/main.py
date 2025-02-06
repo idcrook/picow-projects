@@ -264,16 +264,31 @@ def _json_dumps(s):
     return bytes(json.dumps(s, separators=(',', ':')), 'utf-8')
 
 async def messages(client):  # Respond to incoming messages
+    ha_status_topic = TOP_TOPIC + "/status"
     # If MQTT V5is used this would read
     # async for topic, msg, retained, properties in client.queue:
     async for topic, msg, retained in client.queue:
-        print(topic.decode(), msg.decode(), retained)
+        t = topic.decode()
+        m = msg.decode()
+        print(t, m)
+        if t == ha_status_topic:
+            if m == 'online':
+                print(f"Received HA status message {m}")
+                # re-discover since we received MQTT birth message
+                state_topic = await mqtt_discovery(client)
+                print(f"sensor state in: {state_topic}")
+            else:
+                print(f"Received HA status message: {m}")
+                # Should anything else be done here??
 
 async def up(client):  # Respond to connectivity being (re)established
+    ha_status_topic = TOP_TOPIC + "/status"
     while True:
         await client.up.wait()  # Wait on an Event
         client.up.clear()
         # await client.subscribe('foo_topic', 1)  # renew subscriptions
+        await client.subscribe(ha_status_topic, 1)
+
 
 
 async def sleep_for_ms(n: int, wdt):
@@ -338,6 +353,7 @@ async def main(client):
         wdt = type('WDT', (object,), { "feed": lambda *self: None })
 
     state_topic = await mqtt_discovery(client)
+    print(f"sensor state in: {state_topic}")
 
     n = 0
     display_values = OrderedDict([])

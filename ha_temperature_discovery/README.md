@@ -1,6 +1,6 @@
-# Home Assistant Temperature Sensor
+# Home Assistant Temperature Sensor(s)
 
-Micropython Home Assistant sensor driver
+Micropython Home Assistant sensor driver built using Raspberry Pi Pico W
 
 ## Features
 
