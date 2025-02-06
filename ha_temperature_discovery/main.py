@@ -336,7 +336,6 @@ async def main(client):
     else:
         print("using DUMMY watchdog timer")
         wdt = type('WDT', (object,), { "feed": lambda *self: None })
-        # print("wdt", end=" ")
 
     state_topic = await mqtt_discovery(client)
 
@@ -362,7 +361,7 @@ async def main(client):
                 device = s_params['interface']
                 name = s_params['name']
                 state_name = _get_ds_state_name(name)
-                temperature = round(DS_SENSOR_IFC.read_temp(device), 1)
+                temperature = DS_SENSOR_IFC.read_temp(device)
                 # print(s_id, name, temperature, "C")
                 tF = cvt_CtoF(temperature)
                 state_update[state_name] = tF
@@ -416,6 +415,9 @@ async def mqtt_discovery(client):
             "device_class": "temperature",
             "state_topic": state_topic,
             "unit_of_measurement": "°F",
+            "suggested_display_precision": 1,
+            "expire_after": 60 * 3, # TODO: make configurable
+            "force_update": True,
             "value_template": f"{{{{ value_json.{state_name} | is_defined }}}}",
             "unique_id": f"{UNIQ_ID_PRE}_{readable}_{name}_temp",
             "device" : CFG_DEV,
