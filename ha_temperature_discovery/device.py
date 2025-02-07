@@ -29,7 +29,7 @@ I2C_CONFIG = {
               "address": 60,
               "width": 128,
               "height": 32,
-              # useful in split color displays
+              # value of 8 useful in split color displays
               "second_line_padding": 8,
           }
          }

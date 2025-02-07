@@ -246,7 +246,7 @@ def _display_readings(values):
         x = column_no * reading_width
         y = line_no * line_height
         #print(f"{y:2d} {x:3d}|{s}")
-        ypadding = second_line_padding if line_no == 1 else 0
+        ypadding = second_line_padding if line_no >= 1 else 0
         display.text(s, x, y+ypadding, 1)
         (line_no, column_no) = divmod (line_no * total_columns + column_no + 1,
                                        total_columns)
