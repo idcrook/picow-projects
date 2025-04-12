@@ -1,6 +1,3 @@
-IMPORTANT: This project lives on in own repository. Preserved here for historical reason.
-
-For the repo: <https://github.com/idcrook/yaha_temperature_monitor>
 
 # MQTT sensor node with DS18B20 and BME280 sensor
 

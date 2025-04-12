@@ -1,3 +1,8 @@
+**IMPORTANT**: This project lives on in own repository. Preserved here for historical reason.
+
+For the repo: <https://github.com/idcrook/yaha_temperature_monitor>
+
+
 # Home Assistant Temperature Sensor(s)
 
 Micropython Home Assistant sensor driver built using Raspberry Pi Pico W
